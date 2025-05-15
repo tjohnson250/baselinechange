@@ -10,7 +10,6 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-install.packages("remotes") # unless you have it already
 remotes::install_github("jtextor/dagitty/r")
 library(dagitty)
 library(ggdag)
@@ -24,8 +23,6 @@ The goal of this notebook is to explain how to estimate the average treatment ef
 3.  An observational study with treatment confounders and loss to follow-up.
 
 Each approach uses the same core data generating model with a proportional treatment effect, where the treatment works better in patients with lower baseline scores.
-
-We will use a Doubly Robust (DR) estimator below. For an excellent explanation of DR estimators see [@funk2011]
 
 ## Randomized Controlled Trial With No Loss to Follow-Up
 
@@ -85,7 +82,7 @@ ggplot(status_data, aes(x = x, y = y, xend = xend, yend = yend)) +
 
 ```
 
-Now let's simulate data for the RCT.
+Now let's simulate data for the RCT. This simulates and retains the potential outcomes Y0_time1, Y1_time1, Y0_time2 and Y1_time2 for all patients, then sets time1 and time2 for a patient based on that patient's assigned treatment in the data. This means that we can calculate the true causal effect from the potential outcomes.
 
 ```{r}
 # Set seed for reproducibility
@@ -109,32 +106,43 @@ baseline <- baseline - 5 * severity
 prop_effect1 <- 0.20  # 20% improvement at time1 for treatment group
 prop_effect2 <- 0.15  # Additional 15% improvement at time2 for treatment group
 
+# Calculate potential outcomes
+# True effect is proportional to baseline
+# The treatment also has a stronger effect for patients with higher severity
+Y0_time1 <- baseline + rnorm(n, mean = 0, sd = 3)
+Y1_time1 <- baseline * (1 + prop_effect1 + 0.1 * severity) + rnorm(n, mean = 0, sd = 3)
+Y0_time2 <- Y0_time1 + rnorm(n, mean = 0, sd = 3)
+Y1_time2 <- Y1_time1 * (1 + prop_effect1 + 0.1 * severity) + rnorm(n, mean = 0, sd = 3)
+
 # Calculate time1 values - true effect is proportional to baseline
 # The treatment also has a stronger effect for patients with higher severity
-time1 <- vector("numeric", n)
-for (i in 1:n) {
-  if (group[i] == 1) {
-    # Treatment group: effect is proportional to baseline and increased by severity
-    effect_modifier <- 1 + prop_effect1 + 0.1 * severity[i]
-    time1[i] <- baseline[i] * effect_modifier + rnorm(1, mean = 0, sd = 3)
-  } else {
-    # Control group: small random change
-    time1[i] <- baseline[i] + rnorm(1, mean = 0, sd = 3)
-  }
-}
+# time1 <- vector("numeric", n)
+# for (i in 1:n) {
+#   if (group[i] == 1) {
+#     # Treatment group: effect is proportional to baseline and increased by severity
+#     effect_modifier <- 1 + prop_effect1 + 0.1 * severity[i]
+#     time1[i] <- baseline[i] * effect_modifier + rnorm(1, mean = 0, sd = 3)
+#   } else {
+#     # Control group: small random change
+#     time1[i] <- baseline[i] + rnorm(1, mean = 0, sd = 3)
+#   }
+# }
 
-# Calculate time2 values
-time2 <- vector("numeric", n)
-for (i in 1:n) {
-  if (group[i] == 1) {
-    # Treatment group: additional effect proportional to time1
-    effect_modifier <- 1 + prop_effect2 + 0.05 * severity[i]
-    time2[i] <- time1[i] * effect_modifier + rnorm(1, mean = 0, sd = 3)
-  } else {
-    # Control group: small random change
-    time2[i] <- time1[i] + rnorm(1, mean = 0, sd = 3)
-  }
-}
+# time2 <- vector("numeric", n)
+# for (i in 1:n) {
+#   if (group[i] == 1) {
+#     # Treatment group: additional effect proportional to time1
+#     effect_modifier <- 1 + prop_effect2 + 0.05 * severity[i]
+#     time2[i] <- time1[i] * effect_modifier + rnorm(1, mean = 0, sd = 3)
+#   } else {
+#     # Control group: small random change
+#     time2[i] <- time1[i] + rnorm(1, mean = 0, sd = 3)
+#   }
+# }
+
+# Set the observed time1 and time2 based on treatment (group)  assignment
+time1 <- ifelse(group == 0, Y0_time1, Y1_time1)
+time2 <- ifelse(group == 0, Y0_time2, Y1_time2)
 
 # Create data frame
 data <- data.frame(
@@ -143,6 +151,10 @@ data <- data.frame(
   baseline = baseline,
   time1 = time1,
   time2 = time2,
+  Y0_time1 = Y0_time1,
+  Y1_time1 = Y1_time1,
+  Y0_time2 = Y0_time2,
+  Y1_time2 = Y1_time2,
   severity = severity  # Include the latent severity variable
 )
 
@@ -166,6 +178,20 @@ And here is the Canonical Table 2. This shows a significant difference between `
 table2 <- tbl_summary(data, by = group) |> add_p() |> bold_labels()
 table2
 ```
+
+With all the potential outcomes we can calculate the Average Treatment Effect of the treatment on time2 as:
+
+```{r}
+mean(data$Y1_time2) - mean(data$Y0_time2)
+```
+
+This is just the mean of the raw individual treatment effects:
+
+```{r}
+mean(data$Y1_time2 - data$Y0_time2)
+```
+
+This value is not adjusted for the baseline values of each patient.
 
 While there is only one measured covariate here (`baseline`) a covariate balance plot showing the standardized mean differences between covariates in the treated and untreated groups (treatment mean - control mean). Here, we include the latent variable `severity`. Even though we have an RCT, both covariates are skewed to the right.
 
