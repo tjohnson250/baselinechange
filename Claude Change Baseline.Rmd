@@ -1,6 +1,6 @@
 ---
 title: "Claude Change Baseline Censoring"
-output: html_notebook
+output: html_notebookGITHU
 date: "2025-04-21"
 bibliography: references.bib
 ---
