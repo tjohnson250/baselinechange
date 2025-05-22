@@ -14,15 +14,284 @@ library(ggdag)
 library(tidyverse)
 ```
 
-The goal of this notebook is to explain how to estimate the average treatment effect of a dichotomous (binary) treatment on change from a continuous baseline measure [@tennant2021] under three different scenarios:
+The goal of this notebook is to demonstrate how to estimate treatment effects of a dichotomous (binary) treatment on change from a continuous baseline measure [@tennant2021] under three different scenarios:
 
 1.  A Randomized Controlled Trial (RCT) with no loss to follow-up.
 2.  An RCT with loss to follow-up.
-3.  An observational study with treatment confounders and loss to follow-up.
+3.  An observational study with treatment assignment confounding and loss to follow-up.
+
+In addition to the three scenarios, we use a series of increasingly complex data generating models:
+
+1.  Additive treatment effect. Baseline measure is a competing exposure for the outcome measure. No latent variables or unmeasured confounding. No effect modification.
 
 Each approach uses the same core data generating model with a proportional treatment effect, where the treatment works better in patients with lower baseline scores.
 
-## Randomized Controlled Trial With No Loss to Follow-Up
+We will also consider several causal estimands that are often used assess the effect of a treatment on change. These include:
+
+1.  The average treatment effect on the outcome measure, expressed as the risk difference:\
+    $$\mathrm{E}(Y_1^x) - \mathrm{E}(Y_1^{x'})$$ {#eq-att-outcome}\
+    Here, we use the potential outcomes notation, where $Y_1$ is the outcome, $x$ is the treatment, and $x'$ is the control. Hence this effect estimate is the difference between the expected outcome under treatment and the expected outcome under control.
+
+2.  The average treatment effect on the change score:\
+    $$
+    \mathrm{E}(Y_1^x - Y_0^x) - \mathrm{E}(Y_1^{x'} - Y_0^{x'})
+    $$ {#eq-att-changescore}\
+    This is the difference between the change score $Y_1 - Y_0$ under treatment vs. control, where $Y_0$ is the baseline score.
+
+There is considerable controversy in the literature over whether and when to use the difference in outcomes @eq-att-outcome or the difference in the change score @eq-att-changescore.
+
+## Model 1: Additive treatment effect, no unmeasured confounding
+
+The Causal DAG for the first and simplest model:
+
+```{r, fig.width = 12, fig.height = 8}
+# Create the DAG using dagify
+dagMod1 <- dagify(
+  time1 ~ baseline + group,
+  change1 ~ baseline + time1,
+  exposure = "group",
+  outcome = "time1",
+  coords = data.frame(
+    name = c("baseline", "group", "time1", "change1"),
+    x = c(0, 4, 3, 1.5)*.5,
+    y = c(1, 2, 1, 0)*.5
+  )
+)
+
+# Convert the dagitty graph to a ggdag group for prettier printing
+tidy_dagMod1 <- tidy_dagitty(dagMod1) 
+
+# Plot with custom node shapes
+# Get the status (exposure, outcome) information and set variables without a status to "observed"
+status_dataMod1 <- ggdag_status(tidy_dagMod1)$data %>% mutate(status = ifelse(is.na(status), "observed", as.character(status)))
+
+# Plot with custom node shapes while preserving status coloring
+ggplot(status_dataMod1, aes(x = x, y = y, xend = xend, yend = yend)) +
+  geom_dag_edges(arrow_directed = grid::arrow(length = unit(0.5, "cm"), type = "closed")) +
+  geom_dag_point(aes(color = status), size = 24) +
+  geom_dag_text(color = "white") +
+  scale_shape_manual(values = c(circle = 16, square = 15), guide = "none") +
+  scale_color_discrete(name = "Status", na.value = "grey50") +
+  theme_dag() +
+  theme(legend.position = "right")
+
+```
+
+Now let's simulate data for the RCT. This simulates and retains the potential outcomes Y0_time1, Y1_time1, Y0_time2 and Y1_time2 for all patients, then sets time1 and time2 for a patient based on that patient's assigned treatment in the data. This means that we can calculate the true causal effect from the potential outcomes.
+
+```{r}
+# Set seed for reproducibility
+set.seed(124)
+
+# Simulate data for demonstration
+# 150 participants, 2 groups (treatment and control)
+n <- 150
+group <- rep(c(0, 1), each = n/2)  # 0 = control, 1 = treatment
+
+# Generate baseline scores (similar for both groups)
+baseline <- rnorm(n, mean = 50, sd = 10)
+
+# Generate follow-up scores with proportional effects
+additive_effect <- 10  # 20% improvement at time1 for treatment group
+
+# Calculate potential outcomes
+# 0: control
+# 1: treatment
+Y0_time1 <- baseline + 0*additive_effect + rnorm(n, mean = 0, sd = 3)
+Y1_time1 <- baseline + 1*additive_effect + rnorm(n, mean = 0, sd = 3)
+
+# Set the observed time1 based on treatment (group)  assignment
+time1 <- ifelse(group == 0, Y0_time1, Y1_time1)
+
+# Calculate change score
+change1 <- time1 - baseline
+
+# Create data frame
+dataMod1 <- data.frame(
+  id = 1:n,
+  group = factor(group, labels = c("Control", "Treatment")),
+  baseline = baseline,
+  time1 = time1,
+  change1 = change1,
+  Y0_time1 = Y0_time1,
+  Y1_time1 = Y1_time1
+)
+
+dataMod1
+```
+
+For publication ready tables, we can use gtsummary. Here is the cannonical Table 1:
+
+```{r}
+library(gtsummary)
+table1 <- dataMod1 |> tbl_summary()
+table1
+```
+
+And here is the Canonical Table 2. This shows a significant difference between `time2` for the treatment and control groups.
+
+```{r}
+table2 <- tbl_summary(dataMod1, by = group) |> add_p() |> bold_labels()
+table2
+```
+
+Since we have the potential outcomes for all patients we can calculate the Average Treatment Effect of the treatment on time2 as:
+
+```{r}
+mean(dataMod1$Y1_time1) - mean(dataMod1$Y0_time1)
+```
+
+This is just the mean of the raw individual treatment effects:
+
+```{r}
+mean(dataMod1$Y1_time1 - dataMod1$Y0_time1)
+```
+
+We can also compute the difference in change scores between the treated and untreated, which is the causal estimand showing the effect of treatment, $X$, on change in score $Y$, where $Y_1^x$ is the potential outcome of $Y_1$ the follow-up score when $X$ is set to $x$ and $Y_1^{x'}$ is the potential outcome of ...
+
+$$
+\mathrm{E}(Y_1^x - Y_0^x) - \mathrm{E}(Y_1^{x'} - Y_0^{x'})
+$$ {#eq-changescore}
+
+When we have all potential outcomes for the populations, this effect estimate is identical to the equations above, because the baselines cancel out across the two means below. Because of the following equality
+
+$$\mathrm{E}(X - Y) = \mathrm{E}(X) - \mathrm{E}(Y)$$
+
+We can rewrite @eq-changescore as:
+
+$$
+\mathrm{E}(Y_1^x) - \mathrm{E}(Y_0^x) - \mathrm{E}(Y_1^{x'}) + \mathrm{E}(Y_0^{x'})
+$$
+
+Since the baseline values under treatment and control are identical for each patient, the second and fourth terms in cancel other leaving
+
+```{r}
+mean(dataMod1$Y1_time1 - dataMod1$baseline) - mean(dataMod1$Y0_time1 - data$baseline)
+```
+
+While there is only one measured covariate here (`baseline`) a covariate balance plot showing the standardized mean differences between covariates in the treated and untreated groups (treatment mean - control mean) will show whether there is covariate imbalance due to the small sample size. Here, we include the latent variable `severity`. Even though we have an RCT, both covariates are skewed to the right.
+
+```{r}
+library(cobalt)
+unadjcov <- bal.tab(group ~ baseline + severity, data = data, thresholds = c(m = .1))
+love.plot(unadjcov, stars = "std", thresholds = c(m = .1))
+```
+
+There is some controversy over how to measure total effect of a treatment on change from baseline. If the baseline values of the treatment and control group are balanced, then an unbiased average treatment effect is just the mean of `time2` for those in the treatment group minus the mean for those in the control group. In an RCT with sufficient sample size, the baselines are expected to be balanced. Let's check our data:
+
+```{r}
+data %>% group_by(group) %>% summarize(meanBaseline = mean(baseline))
+```
+
+With the relatively small sample size, the baseline means are close, but not perfectly balanced. This could bias our effect estimate if we simply use the difference in means of `time2` between Treatment and Control. The means of `time2` for the Control and Treatment groups are:
+
+```{r}
+means <- data %>% group_by(group) %>% summarize(mean = mean(time2))
+means
+```
+
+Subtracting these to get the average treatment effect is:
+
+```{r}
+filter(means, group=="Treatment")$mean - filter(means, group=="Control")$mean
+```
+
+We can also do a t-test to test for difference in means for `time2` between the treatment and control groups:
+
+```{r}
+t.test(time2 ~ group, data = data)
+```
+
+Here, we see that the means are statistically significantly different.
+
+If the baseline values are unbalanced, the effect estimate of the difference in means of `time2` will be biased. This is why many analysts recommend always using analysis of covariance (ANCOVA) where the outcome is regressed on the treatment and adjusted for the baseline value:
+
+```{r}
+res <- lm(time2 ~ group + baseline, data = data)
+summary(res)
+```
+
+Here we see that the causal effect of `group` on `time2` when adjusted for baseline is `coef(res)["group"]`. Note above that the baseline means between treatment and control differ by around .5, which explains the difference between the effect as computed on the difference in the mean of `time2` between groups, vs. the regression results.
+
+We can use gtsummary for a nicer view of the results:
+
+```{r}
+tbl_regression(res, estimate_fun = purrr::partial(style_ratio, digits = 2))
+```
+
+Interpretation: After adjusting for baseline differences, mean `time2` increased by \`res\$ units for those receiving the treatment compared with those who did not receive the treatment. We can see this here:
+
+```{r}
+# Load required libraries
+library(ggplot2)
+library(plotly)
+
+mean_baseline = mean(data$baseline)
+
+# Calculate predictions at mean baseline for each group
+pred1 <- predict(res, newdata = data.frame(group = levels(data$group)[1], baseline = mean_baseline))
+pred2 <- predict(res, newdata = data.frame(group = levels(data$group)[2], baseline = mean_baseline))
+
+# Create the plot
+p <- ggplot(data, aes(x = baseline, y = time2, color = group)) +
+  # Add points
+  geom_point(alpha = 0.6, size = 2) +
+  
+  # Add regression lines for each group
+  geom_smooth(method = "lm", se = TRUE, alpha = 0.2) +
+  
+  # Add vertical line at mean baseline
+  geom_vline(xintercept = mean_baseline, linetype = "dashed", color = "black", size = 0.8) +
+  
+  # Add points for the endpoints of the vertical line (these will be invisible)
+  geom_point(aes(x = mean_baseline, y = pred1, 
+                text = paste("Group:", levels(data$group)[1], 
+                           "<br>Baseline:", round(mean_baseline, 2),
+                           "<br>Predicted Time2:", round(pred1, 2))),
+             color = "red", size = 3, alpha = 0.8, inherit.aes = FALSE) +
+  
+  geom_point(aes(x = mean_baseline, y = pred2,
+                text = paste("Group:", levels(data$group)[2], 
+                           "<br>Baseline:", round(mean_baseline, 2),
+                           "<br>Predicted Time2:", round(pred2, 2))),
+             color = "red", size = 3, alpha = 0.8, inherit.aes = FALSE) +
+  
+  # Add the vertical line showing difference between groups at mean baseline
+  geom_segment(
+    x = mean_baseline, 
+    xend = mean_baseline,
+    y = pred1,
+    yend = pred2,
+    color = "red", 
+    size = 2,
+    arrow = arrow(ends = "both", angle = 90, length = unit(0.1, "inches"))
+  ) +
+  
+  # Customize the plot
+  labs(
+    title = "Time2 vs Baseline by Group",
+    subtitle = paste("Vertical line shows difference between groups at mean baseline (", 
+                    round(mean_baseline, 2), ")", sep = ""),
+    x = "Baseline",
+    y = "Time2",
+    color = "Group"
+  ) +
+  
+  # Clean theme
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 11, color = "gray40"),
+    legend.position = "bottom"
+  )
+
+# Convert to plotly for interactive tooltips
+ggplotly(p, tooltip = "text") %>%
+  layout(title = list(text = "Time2 vs Baseline by Group<br><sub>Vertical line shows difference between groups at mean baseline</sub>"))
+
+```
+
+Recall that the treatment effect in this model is proportional to the baseline value and increased by `severity`, a latent variable. The average treatment effect reported in the analysis above is the average across all baseline values in the model. \## Randomized Controlled Trial With No Loss to Follow-Up
 
 In this simulation:
 
@@ -195,7 +464,7 @@ We can also compute the difference in change scores between the treated and untr
 
 $$
 \mathrm{E}(Y_1^x - Y_0^x) - \mathrm{E}(Y_1^{x'} - Y_0^{x'})
-$$ {#eq-changescore}
+$$
 
 When we have both potential outcomes for the populations, this is identical to the equations above, because the baselines cancel out across the two means below. In @eq-changescore
 
