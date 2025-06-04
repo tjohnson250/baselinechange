@@ -33,7 +33,6 @@ Each approach uses the same core data generating model with a proportional treat
 3.  An RCT with loss to follow-up.
 4.  An observational study with treatment assignment confounding
 5.  An observational study with treatment assignment counfounding and loss to follow-up.
->>>>>>> Stashed changes
 
 We will also consider several causal estimands that are often used assess the effect of a treatment on change. These include:
 
