@@ -16,18 +16,6 @@ library(tidyverse)
 
 The goal of this notebook is to demonstrate how to estimate treatment effects of a dichotomous (binary) treatment on change from a continuous baseline measure (see for example [@tennant2021]) under four different scenarios:
 
-<<<<<<< Updated upstream
-1.  An ideal scenario in which potential outcomes (the outcomes under both treatment and control) are known for all participants.
-2.  A Randomized Controlled Trial (RCT) with no loss to follow-up.
-3.  An RCT with loss to follow-up.
-4.  An observational study with treatment assignment confounding and loss to follow-up.
-
-In addition to the three scenarios, we use a series of increasingly complex data generating models:
-
-1.  Additive treatment effect. Baseline measure is a competing exposure for the outcome measure. No latent variables or unmeasured confounding. No effect modification.
-
-Each approach uses the same core data generating model with a proportional treatment effect, where the treatment works better in patients with lower baseline scores.
-=======
 1.  A ground truth model where the potential outcomes (the outcome measure under both treatment and control) are known for all participants.
 2.  A Randomized Controlled Trial (RCT) with no loss to follow-up.
 3.  An RCT with loss to follow-up.
@@ -50,11 +38,7 @@ There is considerable controversy in the literature over whether and when to use
 
 ## Model 1: Additive treatment effect, no unmeasured confounding
 
-<<<<<<< Updated upstream
-Here is the Causal DAG for the first and simplest model:
-=======
 The Causal DAG for the first and simplest model looks like this:
->>>>>>> Stashed changes
 
 ```{r, fig.width = 12, fig.height = 8}
 # Create the DAG using dagify
