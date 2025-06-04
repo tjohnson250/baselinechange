@@ -14,8 +14,9 @@ library(ggdag)
 library(tidyverse)
 ```
 
-The goal of this notebook is to demonstrate how to estimate treatment effects of a dichotomous (binary) treatment on change from a continuous baseline measure [@tennant2021] under three different scenarios:
+The goal of this notebook is to demonstrate how to estimate treatment effects of a dichotomous (binary) treatment on change from a continuous baseline measure (see for example [@tennant2021]) under four different scenarios:
 
+<<<<<<< Updated upstream
 1.  An ideal scenario in which potential outcomes (the outcomes under both treatment and control) are known for all participants.
 2.  A Randomized Controlled Trial (RCT) with no loss to follow-up.
 3.  An RCT with loss to follow-up.
@@ -26,12 +27,19 @@ In addition to the three scenarios, we use a series of increasingly complex data
 1.  Additive treatment effect. Baseline measure is a competing exposure for the outcome measure. No latent variables or unmeasured confounding. No effect modification.
 
 Each approach uses the same core data generating model with a proportional treatment effect, where the treatment works better in patients with lower baseline scores.
+=======
+1.  A ground truth model where the potential outcomes (the outcome measure under both treatment and control) are known for all participants.
+2.  A Randomized Controlled Trial (RCT) with no loss to follow-up.
+3.  An RCT with loss to follow-up.
+4.  An observational study with treatment assignment confounding
+5.  An observational study with treatment assignment counfounding and loss to follow-up.
+>>>>>>> Stashed changes
 
 We will also consider several causal estimands that are often used assess the effect of a treatment on change. These include:
 
-1.  The average treatment effect on the outcome measure, expressed as the risk difference:\
+1.  The average treatment effect (ATE) on the outcome measure, expressed as the risk difference:\
     $$\mathrm{E}(Y_1^x) - \mathrm{E}(Y_1^{x'})$$ {#eq-att-outcome}\
-    Here, we use the potential outcomes notation, where $Y_1$ is the outcome, $x$ is the treatment, and $x'$ is the control. Hence this effect estimate is the difference between the expected outcome under treatment and the expected outcome under control.
+    Here, we use the potential outcomes notation, where $Y_0$ is the baseline score, $Y_1$ is the outcome, $x$ is the treatment, and $x'$ is the control. $Y_1^x$ represents the value that a participant would have if treated. Hence this effect estimate is the difference between the expected outcome if all patients in the study were treated and the expected outcome if all patients were not treated.
 
 2.  The average treatment effect on the change score:\
     $$
@@ -43,7 +51,11 @@ There is considerable controversy in the literature over whether and when to use
 
 ## Model 1: Additive treatment effect, no unmeasured confounding
 
+<<<<<<< Updated upstream
 Here is the Causal DAG for the first and simplest model:
+=======
+The Causal DAG for the first and simplest model looks like this:
+>>>>>>> Stashed changes
 
 ```{r, fig.width = 12, fig.height = 8}
 # Create the DAG using dagify
@@ -64,7 +76,8 @@ tidy_dagMod1 <- tidy_dagitty(dagMod1)
 
 # Plot with custom node shapes
 # Get the status (exposure, outcome) information and set variables without a status to "observed"
-status_dataMod1 <- ggdag_status(tidy_dagMod1)$data %>% mutate(status = ifelse(is.na(status), "observed", as.character(status)))
+status_dataMod1 <- ggdag_status(tidy_dagMod1)$data |>
+  mutate(status = ifelse(is.na(status), "observed", as.character(status)))
 
 # Plot with custom node shapes while preserving status coloring
 ggplot(status_dataMod1, aes(x = x, y = y, xend = xend, yend = yend)) +
