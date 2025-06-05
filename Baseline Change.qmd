@@ -24,9 +24,9 @@ The goal of this notebook is to demonstrate how to estimate treatment effects of
 
 We will also consider several causal estimands that are often used assess the effect of a treatment on change. These include:
 
-1.  The average treatment effect (ATE) on the outcome measure, expressed as the risk difference:\
+1.  The average treatment effect (ATE) on the outcome measure, expressed as the risk difference between the outcome under treatment vs. control:\
     $$\mathrm{E}(Y_1^x) - \mathrm{E}(Y_1^{x'})$$ {#eq-att-outcome}\
-    Here, we use the potential outcomes notation, where $Y_0$ is the baseline score, $Y_1$ is the outcome, $x$ is the treatment, and $x'$ is the control. $Y_1^x$ represents the value that a participant would have if treated. Hence this effect estimate is the difference between the expected outcome if all patients in the study were treated and the expected outcome if all patients were not treated.
+    Here, we use the potential outcomes notation, where $Y_1$ is the outcome ($Y_0$ is the baseline score, which is not used in this estimand), $x$ is the treatment, and $x'$ is the control. $Y_1^x$ represents the value that a participant would have if treated. Hence this effect estimate is the difference between the expected outcome if all patients in the study were treated and the expected outcome if all patients were not treated.
 
 2.  The average treatment effect on the change score:\
     $$
@@ -34,7 +34,7 @@ We will also consider several causal estimands that are often used assess the ef
     $$ {#eq-att-changescore}\
     This is the difference between the change score $Y_1 - Y_0$ under treatment vs. control, where $Y_0$ is the baseline score.
 
-There is considerable controversy in the literature over whether and when to use the difference in outcomes @eq-att-outcome or the difference in the change score @eq-att-changescore.
+There is considerable controversy in the literature over whether and when to use the difference in outcomes @eq-att-outcome or the difference in the change score @eq-att-changescore. We will explore some of these issues below.
 
 ## Model 1: Additive treatment effect, no unmeasured confounding
 
@@ -82,7 +82,28 @@ $Y_1$: `time1` or `change1` depending on which outcome we are interested in
 
 $X$: `group` where 0 is control and 1 is treatment
 
-Now let's simulate data for the RCT. In this simulation, the causal effect of treatment on the `time1` is 10, meaning that treated patients will see their baseline score increase by 10 + a random amount of normally distributed noise with $\mu = 0$, $SD = 3$: $N(0,3)$, whereas control will see only the random change. The simulation first calculates and retains the potential outcomes `time1_x0` and `time1_x1`, where `x1` is the outcome under treatment, and `x0` under control. It then sets `time1` (the experimentally observed value) and `change1` for a patient based on that patient's assigned treatment in the data. Likewise, the simulation also calculates potential outcomes of the change score: change1_x0, and change1_x1.
+Now let's simulate data for the RCT. In this simulation, the causal effect of treatment on `time1` is 10, meaning that treated patients will see their baseline score increase by 10 + a random amount of normally distributed noise with mean 0 and standard deviation of 3 ($\mu = 0$, $\sigma = 3$), whereas control will see only the random change. The simulation first calculates and retains the potential outcomes `time1_x0` and `time1_x1`, where `x1` is the outcome under treatment, and `x0` under control. It then sets `time1` (the experimentally observed value) and `change1` for a patient based on that patient's assigned treatment in the model. Likewise, the simulation also calculates potential outcomes of the change score: change1_x0, and change1_x1.
+
+We also use the potential outcomes for each participant to calculate the individual treatment effect for both `time1` and `change1`. An individual treatment effect for a participant is the difference between that person's outcome under treatment and outcome under control.
+
+For clarity, here is the basic data generating model code for an RCT:
+
+```{r}
+#| eval: false
+
+# 150 participants, 2 groups (treatment and control)
+n <- 150
+group <- rep(c(0, 1), each = n/2)  # 0 = control, 1 = treatment
+
+# Generate baseline scores (similar for both groups)
+baseline <- rnorm(n, mean = 50, sd = 10)
+
+# Generate follow-up scores with additive effect
+additive_effect <- 10  # improvement of +10 to time1 for treatment group
+time1 <- baseline + group*additive_effect + rnorm(n, mean = 0, sd = 3)
+```
+
+To generate the RCT outcomes and all the potential outcomes we use the following code (hidden) to get:
 
 ```{r}
 # Set seed for reproducibility
@@ -96,8 +117,8 @@ group <- rep(c(0, 1), each = n/2)  # 0 = control, 1 = treatment
 # Generate baseline scores (similar for both groups)
 baseline <- rnorm(n, mean = 50, sd = 10)
 
-# Generate follow-up scores with proportional effects
-additive_effect <- 10  # 20% improvement at time1 for treatment group
+# Generate follow-up scores with additive effects
+additive_effect <- 10  # improvement of +10 to time1 for treatment group
 
 # Calculate potential outcomes
 # 0: control
@@ -130,7 +151,7 @@ dataMod1 <- data.frame(
 dataMod1
 ```
 
-For publication ready tables, we can use gtsummary. Here is the cannonical Table 1:
+For publication ready tables, we can use gtsummary. Here is the cannonical Table 1 showing an overview of the dataset:
 
 ```{r}
 library(gtsummary)
@@ -138,7 +159,7 @@ table1 <- dataMod1 |> select(-id) |> tbl_summary()
 table1
 ```
 
-And here is the Canonical Table 2. This shows a significant difference between `time2` for the treatment and control groups.
+And here is the Canonical Table 2. This shows a significant difference between `time2` for the treatment and control groups, along with the differences in the potential outcomes under treatment and control.
 
 ```{r}
 table2 <- dataMod1 |>
@@ -149,17 +170,13 @@ table2 <- dataMod1 |>
 table2
 ```
 
-Since we have the potential outcomes for all patients we can calculate the Average Treatment Effect of the treatment on time1 as:
+Since we have the potential outcomes for all patients we can calculate the Average Treatment Effect of the treatment on time1 (@eq-att-outcome) as:
 
 ```{r}
 mean(dataMod1$time1_x1) - mean(dataMod1$time1_x0)
 ```
 
-This is just the mean of the raw individual treatment effects:
-
-```{r}
-mean(dataMod1$time1_x1 - dataMod1$time1_x0)
-```
+This is close to the true value of 10, but not perfect due to random noise added by the model and the relatively small sample size (150 participants).
 
 We can also compute the difference in change scores between the treated and untreated, which is the causal estimand showing the effect of treatment, $X$, on change in score $Y$, where $Y_1^x$ is the potential outcome of $Y_1$ the follow-up score when $X$ is set to $x$ and $Y_1^{x'}$ is the potential outcome of ...
 
@@ -167,7 +184,7 @@ $$
 \mathrm{E}(Y_1^x - Y_0^x) - \mathrm{E}(Y_1^{x'} - Y_0^{x'})
 $$ {#eq-changescore}
 
-When we have all potential outcomes for the populations, this effect estimate is identical to the equations above, because the baselines cancel out across the two means below. Because of the following equality
+When we have all potential outcomes for the populations, this estimand is identical to the difference in outcome @eq-att-outcome, because the baselines cancel out across the two means below. Because of the following equality
 
 $$\mathrm{E}(X - Y) = \mathrm{E}(X) - \mathrm{E}(Y)$$
 
@@ -177,7 +194,7 @@ $$
 \mathrm{E}(Y_1^x) - \mathrm{E}(Y_0^x) - \mathrm{E}(Y_1^{x'}) + \mathrm{E}(Y_0^{x'})
 $$
 
-Since the baseline values under treatment and control are identical for each patient, the second and fourth terms cancel out.
+When we have the potential outcomes for all patients the baseline values under treatment and control are identical for each patient, hence the second and fourth terms cancel out: $- \mathrm{E}(Y_1^{x'}) + \mathrm{E}(Y_0^{x'})$
 
 ```{r}
 mean(dataMod1$Y1_time1 - dataMod1$baseline) - mean(dataMod1$Y0_time1 - data$baseline)
