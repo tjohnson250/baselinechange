@@ -25,7 +25,7 @@ table caption {
 }
 ```
 
-The goal of this notebook is to demonstrate how to estimate treatment effects of a dichotomous (binary) treatment on change from a continuous baseline measure. See for example [@tennant2021]). For example, suppose we want to estimate the effect of a new drug vs. placebo for reducing blood pressure after 6 months of use. Here, the blood pressure at treatment assignment is the baseline value and blood pressure measured 6 months after treatment assignment is the follow-up measure. There are two common approaches to analyzing the outcome: (1) Compare the difference in the follow-up measures between the experimental and control group; or (2) Compare the difference in change scores between the two groups, where a change score for an individual is the difference between the follow-up blood pressure and the baseline blood pressure.
+The goal of this notebook is to demonstrate how to estimate treatment effects of a dichotomous (binary) treatment on change from a continuous baseline measure, such as in [@tennant2021]. For example, suppose we want to estimate the effect of a new drug vs. placebo for reducing blood pressure after 6 months of use. Here, the blood pressure at treatment assignment is the baseline value and blood pressure measured 6 months after treatment assignment is the follow-up measure. There are two common approaches to analyzing the outcome: (1) Compare the difference in the follow-up measures between the experimental and control group; or (2) Compare the difference in change scores between the two groups, where a change score for an individual is the difference between the follow-up blood pressure and the baseline blood pressure.
 
 We will use five increasingly complex data generating models to explore this problem:
 
@@ -35,7 +35,7 @@ We will use five increasingly complex data generating models to explore this pro
 4.  An observational study with treatment assignment confounding
 5.  An observational study with treatment assignment counfounding and loss to follow-up.
 
-We will also consider two causal estimands based on the two approaches discussed above:
+We will also consider four causal estimands based on the two approaches discussed above:
 
 1.  The average treatment effect (ATE) on the outcome at follow-up, expressed as the risk difference between the outcome under treatment vs. control:\
     $$\mathrm{E}(Y_1^x) - \mathrm{E}(Y_1^{x'})$$ {#eq-att-outcome}\
@@ -555,7 +555,7 @@ According to Causal DAG theory, since there is no backdoor path from `baseline` 
 1.  To block confounding paths in causal DAGs; and
 2.  To improve precision and remove finite sample bias when estimating effects.
 
-Since baseline is not a confounder and there are no other confounders in the causal DAG for our data generating model, by causal DAG theory baseline does not need to be adjusted for. However, adjusting for baseline providees a more efficient estimator of the direct effect, because it reduces residual variance and eliminates bias from chance baseline imbalance.
+Since baseline is not a confounder and there are no other confounders in the causal DAG for our data generating model, by causal DAG theory baseline does not need to be adjusted for. However, adjusting for baseline provides a more efficient estimator of the direct effect, because it reduces residual variance and eliminates bias from chance baseline imbalance.
 
 Since the treatment group happened to have higher baseline values, and baseline positively predicts follow-up scores:
 

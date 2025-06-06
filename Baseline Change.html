@@ -177,7 +177,7 @@ table caption {
 }
 </style>
 </div>
-<p>The goal of this notebook is to demonstrate how to estimate treatment effects of a dichotomous (binary) treatment on change from a continuous baseline measure. See for example <span class="citation" data-cites="tennant2021">(<a href="#ref-tennant2021" role="doc-biblioref">Tennant et al. 2021</a>)</span>). For example, suppose we want to estimate the effect of a new drug vs.&nbsp;placebo for reducing blood pressure after 6 months of use. Here, the blood pressure at treatment assignment is the baseline value and blood pressure measured 6 months after treatment assignment is the follow-up measure. There are two common approaches to analyzing the outcome: (1) Compare the difference in the follow-up measures between the experimental and control group; or (2) Compare the difference in change scores between the two groups, where a change score for an individual is the difference between the follow-up blood pressure and the baseline blood pressure.</p>
+<p>The goal of this notebook is to demonstrate how to estimate treatment effects of a dichotomous (binary) treatment on change from a continuous baseline measure, such as in <span class="citation" data-cites="tennant2021">(<a href="#ref-tennant2021" role="doc-biblioref">Tennant et al. 2021</a>)</span>. For example, suppose we want to estimate the effect of a new drug vs.&nbsp;placebo for reducing blood pressure after 6 months of use. Here, the blood pressure at treatment assignment is the baseline value and blood pressure measured 6 months after treatment assignment is the follow-up measure. There are two common approaches to analyzing the outcome: (1) Compare the difference in the follow-up measures between the experimental and control group; or (2) Compare the difference in change scores between the two groups, where a change score for an individual is the difference between the follow-up blood pressure and the baseline blood pressure.</p>
 <p>We will use five increasingly complex data generating models to explore this problem:</p>
 <ol type="1">
 <li>A ground truth model where the potential outcomes (the outcome measure under both treatment and control) are known for all participants.</li>
@@ -186,7 +186,7 @@ table caption {
 <li>An observational study with treatment assignment confounding</li>
 <li>An observational study with treatment assignment counfounding and loss to follow-up.</li>
 </ol>
-<p>We will also consider two causal estimands based on the two approaches discussed above:</p>
+<p>We will also consider four causal estimands based on the two approaches discussed above:</p>
 <ol type="1">
 <li><p>The average treatment effect (ATE) on the outcome at follow-up, expressed as the risk difference between the outcome under treatment vs.&nbsp;control:<br>
 <span id="eq-att-outcome"><span class="math display">\[\mathrm{E}(Y_1^x) - \mathrm{E}(Y_1^{x'}) \tag{1}\]</span></span><br>
@@ -6099,7 +6099,7 @@ Causal DAG Theory and Adjustment
 <li>To block confounding paths in causal DAGs; and</li>
 <li>To improve precision and remove finite sample bias when estimating effects.</li>
 </ol>
-<p>Since baseline is not a confounder and there are no other confounders in the causal DAG for our data generating model, by causal DAG theory baseline does not need to be adjusted for. However, adjusting for baseline providees a more efficient estimator of the direct effect, because it reduces residual variance and eliminates bias from chance baseline imbalance.</p>
+<p>Since baseline is not a confounder and there are no other confounders in the causal DAG for our data generating model, by causal DAG theory baseline does not need to be adjusted for. However, adjusting for baseline provides a more efficient estimator of the direct effect, because it reduces residual variance and eliminates bias from chance baseline imbalance.</p>
 <p>Since the treatment group happened to have higher baseline values, and baseline positively predicts follow-up scores:</p>
 <ul>
 <li><p><strong>ANCOVA estimate</strong>: 10 (correctly isolates the direct treatment path)</p></li>
