@@ -14,7 +14,9 @@ library(ggdag)
 library(tidyverse)
 ```
 
-The goal of this notebook is to demonstrate how to estimate treatment effects of a dichotomous (binary) treatment on change from a continuous baseline measure (see for example [@tennant2021]) under four different scenarios:
+The goal of this notebook is to demonstrate how to estimate treatment effects of a dichotomous (binary) treatment on change from a continuous baseline measure (see for example [@tennant2021]). For example, suppose we want to estimate the effect of a new drug vs. placebo for reducing blood pressure after 6 months of use. Here, the blood pressure at treatment assignment is the baseline value and blood pressure measured 6 months after treatment assignment is the follow-up measure. There are two common approaches to analyzing the outcome: (1) Compare the difference in the follow-up measures between the experimental and control group; or (2) Compare the difference in change scores between the two groups, where a change score for an individual is the difference between the follow-up blood pressure and the baseline blood pressure.
+
+We will use five increasingly complex data generating models to explore this problem:
 
 1.  A ground truth model where the potential outcomes (the outcome measure under both treatment and control) are known for all participants.
 2.  A Randomized Controlled Trial (RCT) with no loss to follow-up.
@@ -22,7 +24,7 @@ The goal of this notebook is to demonstrate how to estimate treatment effects of
 4.  An observational study with treatment assignment confounding
 5.  An observational study with treatment assignment counfounding and loss to follow-up.
 
-We will also consider several causal estimands that are often used assess the effect of a treatment on change. These include:
+We will also consider two causal estimands based on the two approaches discussed above:
 
 1.  The average treatment effect (ATE) on the outcome measure, expressed as the risk difference between the outcome under treatment vs. control:\
     $$\mathrm{E}(Y_1^x) - \mathrm{E}(Y_1^{x'})$$ {#eq-att-outcome}\
@@ -36,7 +38,7 @@ We will also consider several causal estimands that are often used assess the ef
 
 There is considerable controversy in the literature over whether and when to use the difference in outcomes @eq-att-outcome or the difference in the change score @eq-att-changescore. We will explore some of these issues below.
 
-## Model 1: Additive treatment effect, no unmeasured confounding
+## Model 1: Additive Treatment Effect, Potential Outcomes Known
 
 The Causal DAG for the first and simplest model looks like this:
 
@@ -82,66 +84,39 @@ $Y_1$: `time1` or `change1` depending on which outcome we are interested in
 
 $X$: `group` where 0 is control and 1 is treatment
 
-Now let's simulate data for the RCT. In this simulation, the causal effect of treatment on `time1` is 10, meaning that treated patients will see their baseline score increase by 10 + a random amount of normally distributed noise with mean 0 and standard deviation of 3 ($\mu = 0$, $\sigma = 3$), whereas control will see only the random change. The simulation first calculates and retains the potential outcomes `time1_x0` and `time1_x1`, where `x1` is the outcome under treatment, and `x0` under control. It then sets `time1` (the experimentally observed value) and `change1` for a patient based on that patient's assigned treatment in the model. Likewise, the simulation also calculates potential outcomes of the change score: change1_x0, and change1_x1.
+Now let's simulate potential outcomes for the causal DAG shown above. In this simulation, the causal effect of treatment on `time1` is 10, meaning that treated patients will see their baseline score increase by 10 + a random amount of normally distributed noise with mean 0 and standard deviation of 3 ($\mu = 0$, $\sigma = 3$), whereas control will see only the random change. The simulation calculates the potential outcomes `time1_x0` and `time1_x1`, where `x1` is the outcome under treatment, and `x0` under control. Likewise, the simulation also calculates potential outcomes of the change score: `change1_x0`, and `change1_x1`.
 
-We also use the potential outcomes for each participant to calculate the individual treatment effect for both `time1` and `change1`. An individual treatment effect for a participant is the difference between that person's outcome under treatment and outcome under control.
+Finally, we use the potential outcomes for each participant to calculate the individual treatment effect for both `time1` and `change1`. An individual treatment effect for a participant is the difference between that person's outcome under treatment and outcome under control.
 
-For clarity, here is the basic data generating model code for an RCT:
-
-```{r}
-#| eval: false
-
-# 150 participants, 2 groups (treatment and control)
-n <- 150
-group <- rep(c(0, 1), each = n/2)  # 0 = control, 1 = treatment
-
-# Generate baseline scores (similar for both groups)
-baseline <- rnorm(n, mean = 50, sd = 10)
-
-# Generate follow-up scores with additive effect
-additive_effect <- 10  # improvement of +10 to time1 for treatment group
-time1 <- baseline + group*additive_effect + rnorm(n, mean = 0, sd = 3)
-```
-
-To generate the RCT outcomes and all the potential outcomes we use the following code (hidden) to get:
+Here is the data generating model code:
 
 ```{r}
 # Set seed for reproducibility
 set.seed(124)
 
-# Simulate data for demonstration
-# 150 participants, 2 groups (treatment and control)
+# 150 participants
 n <- 150
-group <- rep(c(0, 1), each = n/2)  # 0 = control, 1 = treatment
 
-# Generate baseline scores (similar for both groups)
+# Generate baseline scores
 baseline <- rnorm(n, mean = 50, sd = 10)
 
-# Generate follow-up scores with additive effects
+# Set additive effect
 additive_effect <- 10  # improvement of +10 to time1 for treatment group
 
-# Calculate potential outcomes
-# 0: control
-# 1: treatment
-time1_x0 <- baseline + 0*additive_effect + rnorm(n, mean = 0, sd = 3)
-time1_x1 <- baseline + 1*additive_effect + rnorm(n, mean = 0, sd = 3)
+# Calculate potential outcomes for time1 for all participants
+# time1 under control adds a small amount of random noise, so on average there is no effect of control on the baseline value
+time1_x0 <- baseline + rnorm(n, mean = 0, sd = 3)
 
+# time1 under treatment is on average 10 units higher than baseline
+time1_x1 <- baseline + additive_effect + rnorm(n, mean = 0, sd = 3)
+
+# Calculate potential outcomes for the change score
 change1_x0 <- time1_x0 - baseline
 change1_x1 <- time1_x1 - baseline
 
-# Set the observed time1 based on treatment (group)  assignment
-time1 <- ifelse(group == 0, time1_x0, time1_x1)
-
-# Calculate observed change score
-change1 <- time1 - baseline
-
-# Create data frame
 dataMod1 <- data.frame(
   id = 1:n,
-  group = factor(group, labels = c("Control", "Treatment")),
   baseline = baseline,
-  time1 = time1,
-  change1 = change1,
   time1_x0 = time1_x0,
   time1_x1 = time1_x1,
   change1_x0 = change1_x0,
@@ -151,13 +126,148 @@ dataMod1 <- data.frame(
 dataMod1
 ```
 
-For publication ready tables, we can use gtsummary. Here is the cannonical Table 1 showing an overview of the dataset:
+In this model there is no variable for group, because we generate the potential outcomes for all participants under both control and treatment.
+
+Let's look at a summary of the data:
 
 ```{r}
 library(gtsummary)
 table1 <- dataMod1 |> select(-id) |> tbl_summary()
 table1
 ```
+
+From the summary, we can see, as expected, that under treatment `time1` and the `change` are close to 10 points higher.
+
+Since we have the potential outcomes for all patients we can calculate the Average Treatment Effect of the treatment on `time1` (@eq-att-outcome) as:
+
+```{r}
+mean(dataMod1$time1_x1) - mean(dataMod1$time1_x0)
+```
+
+This is close to the true value of 10, but not perfect due to random noise added by the model and the relatively small sample size (150 participants).
+
+We can also compute the difference in change scores between the treated and untreated (@eq-changescore):
+
+```{r}
+mean(dataMod1$change1_x1) - mean(dataMod1$change1_x0)
+```
+
+When we have all potential outcomes for the particiapants, teh difference in change scores is equal to the difference in outcomes @eq-att-outcome, because the baselines cancel out across the two means below. To see this, we start with the estimand for the change score:
+
+$$
+\mathrm{E}(Y_1^x - Y_0^x) - \mathrm{E}(Y_1^{x'} - Y_0^{x'})
+$$ {#eq-changescore}
+
+Since
+
+$$\mathrm{E}(X - Y) = \mathrm{E}(X) - \mathrm{E}(Y)$$
+
+we can rewrite @eq-changescore as:
+
+$$
+\mathrm{E}(Y_1^x) - \mathrm{E}(Y_0^x) - \mathrm{E}(Y_1^{x'}) + \mathrm{E}(Y_0^{x'})
+$$
+
+When we have the potential outcomes for all patients the baseline values under treatment and control are identical for each patient, hence the second and fourth terms cancel out: $- \mathrm{E}(Y_1^{x'}) + \mathrm{E}(Y_0^{x'})$
+
+```{r}
+mean(dataMod1$time1_x1 - dataMod1$baseline) - mean(dataMod1$time1_x0 - dataMod1$baseline)
+```
+
+To calculate a p-value and confidence interval, we can do a paired t-test:
+
+```{r}
+# Perform paired t-test
+t_test_result <- t.test(dataMod1$time1_x1, dataMod1$time1_x0, paired = TRUE)
+
+# View results
+print(t_test_result)
+
+# Extract specific values
+mean_difference <- t_test_result$estimate
+confidence_interval <- t_test_result$conf.int
+p_value <- t_test_result$p.value
+
+# Display results nicely
+cat("Mean difference (Treatment - Control):", round(mean_difference, 3), "\n")
+cat("95% Confidence Interval:", round(confidence_interval[1], 3), "to", round(confidence_interval[2], 3), "\n")
+cat("P-value:", round(p_value, 4), "\n")
+```
+The paired t-test shows a statistically significant difference between treatment and control conditions (t = 28.61, df = 149, p < 0.001). Participants showed an average increase of 9.92 units under treatment compared to control (95% CI: 9.23 to 10.60).
+
+The t-test for the change score `change1` gives identical results:
+
+```{r}
+# Perform paired t-test
+t_test_result <- t.test(dataMod1$change1_x1, dataMod1$change1_x0, paired = TRUE)
+
+# View results
+print(t_test_result)
+
+# Extract specific values
+mean_difference <- t_test_result$estimate
+confidence_interval <- t_test_result$conf.int
+p_value <- t_test_result$p.value
+
+# Display results nicely
+cat("Mean difference (Treatment - Control):", round(mean_difference, 3), "\n")
+cat("95% Confidence Interval:", round(confidence_interval[1], 3), "to", round(confidence_interval[2], 3), "\n")
+cat("P-value:", round(p_value, 4), "\n")
+```
+Given the small sample size and random noise, the potential outcomes analysis gives us the gold standard causal effect estimate by which we can judge all other effect estimates that use the same data.
+
+We can now consider an RCT using the same data, but with randomization of treatment assignment.
+
+## Model2: RCT with Additive Treatment Effect
+This model uses the same causal DAG and potential outcomes generated for Model 1. We copy the dataset from Model 1, but now we add the `group` variable that reflects the treatment each patient was randomized to. Based on the assigned treatment, we then copy the appropriate potential outcomes to the observed `time1` and `change1`:
+
+
+While there is only one measured covariate here (`baseline`) a covariate balance plot showing the standardized mean differences between covariates in the treated and untreated groups (treatment mean - control mean) will show whether there is covariate imbalance due to the small sample size. Here, we include the latent variable `severity`. Even though we have an RCT, both covariates are skewed to the right.
+
+```{r}
+# Set seed for reproducibility
+
+set.seed(124)
+
+# Simulate data for demonstration
+
+# 150 participants, 2 groups (treatment and control)
+
+n <- 150 group <- rep(c(0, 1), each = n/2) # 0 = control, 1 = treatment
+
+# Generate baseline scores (similar for both groups)
+
+baseline \<- rnorm(n, mean = 50, sd = 10)
+
+# Generate follow-up scores with additive effects
+
+additive_effect \<- 10 \# improvement of +10 to time1 for treatment group
+
+# Calculate potential outcomes
+
+# 0: control
+
+# 1: treatment
+
+time1_x0 \<- baseline + 0*additive_effect + rnorm(n, mean = 0, sd = 3) time1_x1 \<- baseline + 1*additive_effect + rnorm(n, mean = 0, sd = 3)
+
+change1_x0 \<- time1_x0 - baseline change1_x1 \<- time1_x1 - baseline
+
+# Set the observed time1 based on treatment (group) assignment
+
+time1 \<- ifelse(group == 0, time1_x0, time1_x1)
+
+# Calculate observed change score
+
+change1 \<- time1 - baseline
+
+# Create data frame
+
+dataMod1 \<- data.frame( id = 1:n, group = factor(group, labels = c("Control", "Treatment")), baseline = baseline, time1 = time1, change1 = change1, time1_x0 = time1_x0, time1_x1 = time1_x1, change1_x0 = change1_x0, change1_x1 = change1_x1 )
+
+dataMod1
+
+```         
 
 And here is the Canonical Table 2. This shows a significant difference between `time2` for the treatment and control groups, along with the differences in the potential outcomes under treatment and control.
 
@@ -168,44 +278,6 @@ table2 <- dataMod1 |>
   add_p() |>
   bold_labels()
 table2
-```
-
-Since we have the potential outcomes for all patients we can calculate the Average Treatment Effect of the treatment on time1 (@eq-att-outcome) as:
-
-```{r}
-mean(dataMod1$time1_x1) - mean(dataMod1$time1_x0)
-```
-
-This is close to the true value of 10, but not perfect due to random noise added by the model and the relatively small sample size (150 participants).
-
-We can also compute the difference in change scores between the treated and untreated, which is the causal estimand showing the effect of treatment, $X$, on change in score $Y$, where $Y_1^x$ is the potential outcome of $Y_1$ the follow-up score when $X$ is set to $x$ and $Y_1^{x'}$ is the potential outcome of ...
-
-$$
-\mathrm{E}(Y_1^x - Y_0^x) - \mathrm{E}(Y_1^{x'} - Y_0^{x'})
-$$ {#eq-changescore}
-
-When we have all potential outcomes for the populations, this estimand is identical to the difference in outcome @eq-att-outcome, because the baselines cancel out across the two means below. Because of the following equality
-
-$$\mathrm{E}(X - Y) = \mathrm{E}(X) - \mathrm{E}(Y)$$
-
-We can rewrite @eq-changescore as:
-
-$$
-\mathrm{E}(Y_1^x) - \mathrm{E}(Y_0^x) - \mathrm{E}(Y_1^{x'}) + \mathrm{E}(Y_0^{x'})
-$$
-
-When we have the potential outcomes for all patients the baseline values under treatment and control are identical for each patient, hence the second and fourth terms cancel out: $- \mathrm{E}(Y_1^{x'}) + \mathrm{E}(Y_0^{x'})$
-
-```{r}
-mean(dataMod1$Y1_time1 - dataMod1$baseline) - mean(dataMod1$Y0_time1 - data$baseline)
-```
-
-While there is only one measured covariate here (`baseline`) a covariate balance plot showing the standardized mean differences between covariates in the treated and untreated groups (treatment mean - control mean) will show whether there is covariate imbalance due to the small sample size. Here, we include the latent variable `severity`. Even though we have an RCT, both covariates are skewed to the right.
-
-```{r}
-library(cobalt)
-unadjcov <- bal.tab(group ~ baseline + severity, data = data, thresholds = c(m = .1))
-love.plot(unadjcov, stars = "std", thresholds = c(m = .1))
 ```
 
 There is some controversy over how to measure total effect of a treatment on change from baseline. If the baseline values of the treatment and control group are balanced, then an unbiased average treatment effect is just the mean of `time2` for those in the treatment group minus the mean for those in the control group. In an RCT with sufficient sample size, the baselines are expected to be balanced. Let's check our data:
