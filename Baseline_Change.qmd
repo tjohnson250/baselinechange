@@ -31,13 +31,13 @@ We will use five increasingly complex data generating models to explore this pro
 
 1.  A ground truth model where the potential outcomes (the outcome measure under both treatment and control) are known for all participants.
 2.  A Randomized Controlled Trial (RCT) with no loss to follow-up.
-3.  An RCT with loss to follow-up.
+3.  An RCT with differential loss to follow-up.
 4.  An observational study with treatment assignment confounding
 5.  An observational study with treatment assignment counfounding and loss to follow-up.
 
 We will also consider four causal estimands based on the two approaches discussed above:
 
-1.  The average treatment effect (ATE) on the outcome at follow-up, expressed as the risk difference between the outcome under treatment vs. control:\
+1.  The average treatment effect (ATE) on the outcome at follow-up, expressed as the difference between the outcome under treatment vs. control:\
     $$\mathrm{E}(Y_1^x) - \mathrm{E}(Y_1^{x'})$$ {#eq-att-outcome}\
     Here, we use the potential outcomes notation, where $Y_1$ is the follow-up outcome, $x$ is the treatment, and $x'$ is the control. $Y_1^x$ represents the value that a participant would have if treated. Hence this effect estimate is the difference between the expected outcome if all patients in the study were treated and the expected outcome if all patients were not treated.
 
@@ -75,14 +75,14 @@ The Causal DAG for the first and simplest model looks like this:
 #| code-fold: true
 # Create the DAG using dagify
 dagMod1 <- dagify(
-  time1 ~ baseline + group,
+  time1 ~ baseline + group + L,
   change1 ~ baseline + time1,
   exposure = "group",
   outcome = "time1",
   coords = data.frame(
-    name = c("baseline", "group", "time1", "change1"),
-    x = c(0, 4, 3, 1.5)*.5,
-    y = c(1, 2, 1, 0)*.5
+    name = c("baseline", "L", "group", "time1", "change1"),
+    x = c(0, 0, 4, 3, 1.5)*.5,
+    y = c(1, 2, 2, 1, 0)*.5
   )
 )
 
@@ -135,12 +135,22 @@ baseline <- rnorm(n, mean = 50, sd = 10)
 # Set additive effect
 additive_effect <- 10  # improvement of +10 to time1 for treatment group
 
+# Generate a prognostic factor (L) - binary (0: favorable, 1: unfavorable)
+L <- prognostic_factor <- rbinom(n, 1, 0.3)
+
+baseline_outcome_effect <- 5 # Effect of prognostic factor on outcome: time1
+
 # Calculate potential outcomes for time1 for all participants
 # time1 under control adds a small amount of random noise, so on average there is no effect of control on the baseline value
-time1_x0 <- baseline + rnorm(n, mean = 0, sd = 3)
+time1_x0 <- baseline +
+  baseline_outcome_effect*L + 
+  rnorm(n, mean = 0, sd = 3)
 
 # time1 under treatment is on average 10 units higher than baseline
-time1_x1 <- baseline + additive_effect + rnorm(n, mean = 0, sd = 3)
+time1_x1 <- baseline +
+  additive_effect +
+  baseline_outcome_effect*L + 
+  rnorm(n, mean = 0, sd = 3)
 
 # Calculate potential outcomes for the change score
 change1_x0 <- time1_x0 - baseline
@@ -153,6 +163,7 @@ ite_change1 <- change1_x1 - change1_x0
 dataMod1 <- data.frame(
   id = 1:n,
   baseline = baseline,
+  L = L,
   time1_x0 = time1_x0,
   time1_x1 = time1_x1,
   change1_x0 = change1_x0,
@@ -245,7 +256,7 @@ cat("95% Confidence Interval:", round(confidence_interval[1], 3), "to", round(co
 cat("P-value:", round(p_value, 4), "\n")
 ```
 
-The paired t-test shows a statistically significant difference between treatment and control conditions (t = 28.61, df = 149, p \< 0.001). Participants showed an average increase of 9.92 units under treatment compared to control (95% CI: 9.23 to 10.60).
+The paired t-test shows a statistically significant difference between treatment and control conditions.
 
 The t-test for the change score `change1` gives identical results:
 
@@ -349,7 +360,7 @@ dataMod2$change1 <- change1
 
 # dataMod2 contains all of the potential outcomes, lets copy it to preserve it and keep only the data we would see in an RCT
 dataMod2_all <- dataMod2
-dataMod2 <- dataMod2 |> select(id, group, baseline, time1, change1)
+dataMod2 <- dataMod2 |> select(id, group, baseline, L, time1, change1)
 datatable(dataMod2, options = list(pageLength = 10))
 ```
 
@@ -383,11 +394,11 @@ We can see that both `time1` and `change1` differ significantly between the two 
 #| code-fold: true
 #| echo: false
 library(cobalt)
-unadjcov <- bal.tab(group ~ baseline, data = dataMod2, thresholds = c(m = .1))
+unadjcov <- bal.tab(group ~ baseline + L, data = dataMod2, thresholds = c(m = .1))
 love.plot(unadjcov, stars = "std", thresholds = c(m = .1))
 ```
 
-A general rule of thumb is that the standardized mean differences between covariates should fall between $+/-0.1$. As seen above, despite randomization, the baseline values in our RCT are outside this range. If the baseline values of the treatment and control group are balanced, then an unbiased average treatment effect is just the mean of `time2` for those in the treatment group minus the mean for those in the control group. Let's calculate that here and see if the baseline imbalance creates a biased estimate:
+A general rule of thumb is that the standardized mean differences between covariates should fall between $+/-0.1$. As seen above, despite randomization, `baseline` in our RCT is outside this range, while `L` is inside. If the baseline values of the treatment and control group are balanced, then an unbiased average treatment effect is just the mean of `time2` for those in the treatment group minus the mean for those in the control group. Let's calculate that here and see if the baseline imbalance creates a biased estimate:
 
 ```{r}
 means <- dataMod2 |>
@@ -493,7 +504,7 @@ tbl_stack(
   )
 ```
 
-As we have seen, if the baseline values are unbalanced, the effect estimate of the difference in means of `time2` will be biased. This is why many analysts recommend estimating the mean differences in follow-up scores or change scores using analysis of covariance (ANCOVA) where the outcome is regressed on the treatment and adjusted for the baseline. This corresponds to the estimands presented earlier: @eq-CTE-fu and @eq-CTE-cs.
+As we have seen, if the baseline values are imbalanced, the effect estimate of the difference in means of `time2` will be biased. This is why many analysts recommend estimating the mean differences in follow-up scores or change scores using analysis of covariance (ANCOVA) where the outcome is regressed on the treatment and adjusted for the baseline. This corresponds to the estimands presented earlier: @eq-CTE-fu and @eq-CTE-cs.
 
 Let's do this for the follow-up score, `time1`:
 
@@ -515,7 +526,7 @@ tbl_change1_ANCOVA <- tbl_regression(res_change1_ANCOVA, show_single_row = c("gr
 tbl_change1_ANCOVA
 ```
 
-Here, there are no changes over the marginal effect estimate.
+Here, there is little change from the marginal (non-ANCOVA) effect estimate.
 
 Let's look at the two new results in the context of our prior analyses:
 
@@ -545,7 +556,9 @@ tbl_stack(
   )
 ```
 
-Here we see that the analysis of change scores using either the marginal effect of `group` on `change1` or ANCOVA recovers the correct estimate. When analyzing follow-up scores, the marginal effect of `group` on `time1` is biased and has a wide confidence interval, but ANCOVA eliminates the bias and produces a confidence interval equivalent to the the change score analyses.
+Here we see that the analysis of change scores using either the marginal effect of `group` on `change1` or ANCOVA recovers an unbiased estimate similar to marginal effect of `change1 (RCT)`. When analyzing follow-up scores, the marginal effect of `group` on `time1` (`time1 (RCT)` is biased and has a wide confidence interval, but ANCOVA eliminates the bias and produces a confidence interval equivalent to the the change score analyses.
+
+Recall that with the noise in our data and the small sample size, the potential outcomes analysis (`time1 (PO)` and `change1 (PO)`) provide the gold standard estimate of the true effect, which in this model is `{r} additive_effect`.
 
 ::: callout-tip
 ## Causal DAG Theory and Adjustment
@@ -569,8 +582,37 @@ Thus far we have seen that there are several nuances to analyzing change from ba
 
 Now we turn to an RCT with loss to follow-up
 
-## Model 3: RCT, Additive Effect, Loss to Follow-Up.
+## Model 3: RCT, Additive Effect, Differential Loss to Follow-Up.
 To be finished.
+
+Model 3 uses the RCT data, but censors patients based on their baseline score and which treatment group they are in. Patients with lower baseline scores and those in the control group are more likely to drop out.
+
+```{r}
+# Copy dataMod2
+dataMod3 <- dataMod2
+
+# Calculate censoring probabilities
+# Logit model for censoring
+baseline_prob <- .3 # 30% baseline chance of censoring
+
+# Calculate logit for baseline_prob
+baseline_logit <- baseline_logit <- log(0.3 / (1 - 0.3))
+logit_censoring <- baseline_logit + 
+                   -0.01 * dataMod3$baseline +    # patients with higher baseline scores less likely to drop out
+                   0.5 * as.numeric(dataMod3$group)      # Treatment group less likely to drop out
+
+# Convert to probability
+p_censored <- 1 / (1 + exp(-logit_censoring))
+
+# Generate censoring indicator (1 = censored/dropped out, 0 = observed)
+censored <- rbinom(n, 1, p_censored)
+
+# Apply censoring to the data (set values to NA)
+dataMod3$time1[censored == 1] <- NA
+dataMod3$censored <- censored
+dataMod3$p_censored <- p_censored
+```
+
 
 <!-- ```{r} -->
 <!-- # Load required libraries -->
