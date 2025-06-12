@@ -12,6 +12,7 @@ highlight-style: github
 ```{r}
 #| output: false
 #| echo: true
+#| code-fold: true
 remotes::install_github("jtextor/dagitty/r")
 library(dagitty)
 library(ggdag)
@@ -129,14 +130,14 @@ Finally, we use the potential outcomes for each participant to calculate the ind
 
 ### Data Generating Model
 
-Here is the data generating model code:
+Here is the data generating model code:summary(data
 
 ```{r}
 # Set seed for reproducibility
 set.seed(124)
 
-# 150 participants
-n <- 150
+# 300 participants
+n <- 300
 
 # Generate baseline scores
 baseline <- rnorm(n, mean = 50, sd = 10)
@@ -181,7 +182,13 @@ dataMod1 <- data.frame(
   ite_change1 = ite_change1
 )
 
-datatable(dataMod1, options = list(pageLength = 10))
+real_cols <- which(sapply(dataMod1, function(x) {
+  is.numeric(x) && any(x %% 1 != 0, na.rm = TRUE)
+}))
+datatable(dataMod1, 
+          options = list(pageLength = 10),
+          class = "display compact stripe") |>
+  formatRound(columns = real_cols, digits = 2)
 ```
 
 In this data there is no variable for `group`, because we generated the potential outcomes for all participants under both control and treatment. We will use `group` in the next model to simulate treatment assignment for an RCT.
@@ -313,7 +320,7 @@ cat("P-value:", round(p_value, 4), "\n")
 
 For later comparison to regression results, we can use regression instead of t-tests. However, since we have two measures for each participant (both potential outcomes) we need to use a linear mixed-effects model to account for within unit correlation.
 
-The results summarize our analysis thus far:
+The results summarize our analysis thus far. Here, Beta is the effect estimate.
 
 ```{r}
 #| code-fold: true
@@ -357,7 +364,7 @@ tbl_stack(
     tbl_change1_po |> modify_table_body(~.x %>% mutate(label = "change1 (PO)"))
   ) 
 ) |>
-  modify_caption("**Treatment Effects Across Different Models and Estimators**")  |>
+  modify_caption("**Treatment Effects (Beta) Across Different Models and Estimators**")  |>
   modify_footnote(
     label ~ "PO = Potential Outcomes"
   ) 
@@ -393,7 +400,13 @@ dataMod2$change1 <- change1
 # dataMod2 contains all of the potential outcomes, lets copy it to preserve it and keep only the data we would see in an RCT
 dataMod2_all <- dataMod2
 dataMod2 <- dataMod2 |> select(id, group, baseline, L, time1, change1)
-datatable(dataMod2, options = list(pageLength = 10))
+real_cols <- which(sapply(dataMod2, function(x) {
+  is.numeric(x) && any(x %% 1 != 0, na.rm = TRUE)
+}))
+datatable(dataMod2, 
+          options = list(pageLength = 10),
+          class = "display compact stripe") |>
+  formatRound(columns = real_cols, digits = 2)
 ```
 
 ### Summary Statistics
@@ -590,7 +603,7 @@ tbl_stack(
   )
 ```
 
-Here we see that the analysis of change scores using either the marginal effect of `group` on `change1` or ANCOVA recovers an unbiased estimate similar to marginal effect of `change1 (RCT)`. When analyzing follow-up scores, the marginal effect of `group` on `time1` (`time1 (RCT)` is biased and has a wide confidence interval, but ANCOVA eliminates the bias and produces a confidence interval equivalent to  the change score analyses.
+Here we see that the analysis of change scores using either the marginal effect of `group` on `change1` or ANCOVA recovers an unbiased estimate similar to marginal effect of `change1 (RCT)`. When analyzing follow-up scores, the marginal effect of `group` on `time1` (`time1 (RCT)` is biased and has a wide confidence interval, but ANCOVA eliminates the bias and produces a confidence interval equivalent to the change score analyses.
 
 Recall that with the noise in our data and the small sample size, the potential outcomes analysis (`time1 (PO)` and `change1 (PO)`) provide the gold standard estimate of the true effect, which in this model is `{r} additive_effect`.
 
@@ -615,7 +628,7 @@ Now we turn to an RCT with loss to follow-up
 
 To be finished.
 
-Model 3 uses the RCT data, but simulates differential loss to follow-up, meaning that patients drop out of the study before the outcome `time1` can be measured. When a patient is lost to follow-up we say that that patient has been censored. In this simulation, patients are censored based on the presence of the prognostic factor `L` and which treatment group they are in, according to the following probabilities. 
+Model 3 uses the RCT data, but simulates differential loss to follow-up, meaning that patients drop out of the study before the outcome `time1` can be measured. When a patient is lost to follow-up we say that that patient has been censored. In this simulation, patients are censored based on the presence of the prognostic factor `L` and which treatment group they are in, according to the following probabilities.
 
 ```{r}
 #| code-fold: true
@@ -656,8 +669,7 @@ gt_table <- table_data %>%
 gt_table
 ```
 
-
-Patients with `L` see an increase by `{r} baseline_outcome_effect` in `time1`, but are much more likely to drop out of the study if they are also in the treatment group. This will tend to decrease the difference in `time1` between the treatment and control groups, hence resulting in underestimating the treatment effect. 
+Patients with `L` see an increase by `{r} baseline_outcome_effect` in `time1`, but are much more likely to drop out of the study if they are also in the treatment group. This will tend to decrease the difference in `time1` between the treatment and control groups, hence resulting in underestimating the treatment effect.
 
 Let's generate the censored dataset:
 
@@ -738,7 +750,7 @@ tbl_stack(
   )
 ```
 
-The naive analysis of the data, that completely drops censored patients, underestimates the treatment effect. 
+The naive analysis of the data, that completely drops censored patients, underestimates the treatment effect.
 
 ### Adjusting for Loss To Follow-up
 
@@ -766,7 +778,7 @@ dagMod3 <- dagify(
 ggdag_status(dagMod3, use_labels = "name", text = FALSE) + theme_dag()
 ```
 
-To estimate the causal effect of `group` on `time1` we need to block any open backdoor paths between `group` and `time1` while keeping forward, causal, paths open. A backdoor path is a path from one variable to another where at least one arrow points back toward the first variable. There are two paths between  `group` and `time`:
+To estimate the causal effect of `group` on `time1` we need to block any open backdoor paths between `group` and `time1` while keeping forward, causal, paths open. A backdoor path is a path from one variable to another where at least one arrow points back toward the first variable. There are two paths between `group` and `time`:
 
 ```{r}
 #| code-fold: true
