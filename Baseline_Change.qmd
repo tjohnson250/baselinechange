@@ -13,7 +13,7 @@ highlight-style: github
 #| output: false
 #| echo: true
 #| code-fold: true
-remotes::install_github("jtextor/dagitty/r")
+#remotes::install_github("jtextor/dagitty/r")
 library(dagitty)
 library(ggdag)
 library(tidyverse)
@@ -30,6 +30,12 @@ table caption {
   caption-side: top;
 }
 ```
+
+::: callout-caution
+## Construction Zone
+
+This is a work in progress and subject to change nearly daily. At this stage there are numerous inconsistencies as I work to create a single simulated dataset that demonstrates the desired issues at hand while analyzing change from baseline.
+:::
 
 The goal of this notebook is to demonstrate how to estimate treatment effects of a dichotomous (binary) treatment on change from a continuous baseline measure, such as in [@tennant2021]. For example, suppose we want to estimate the effect of a new drug vs. placebo for reducing blood pressure after 6 months of use. Here, the blood pressure at treatment assignment is the baseline value and blood pressure measured 6 months after treatment assignment is the follow-up measure. There are two common approaches to analyzing the outcome: (1) Compare the difference in the follow-up measures between the experimental and control group; or (2) Compare the difference in change scores between the two groups, where a change score for an individual is the difference between the follow-up blood pressure and the baseline blood pressure.
 
@@ -130,7 +136,7 @@ Finally, we use the potential outcomes for each participant to calculate the ind
 
 ### Data Generating Model
 
-Here is the data generating model code:summary(data
+Here is the data generating model code:
 
 ```{r}
 # Set seed for reproducibility
@@ -148,7 +154,7 @@ additive_effect <- 10  # improvement of +10 to time1 for treatment group
 # Generate a prognostic factor (L) - binary (0: favorable, 1: unfavorable)
 L <- prognostic_factor <- rbinom(n, 1, 0.4)
 
-baseline_outcome_effect <- 5 # Effect of prognostic factor on outcome: time1
+baseline_outcome_effect <- 10 # Effect of prognostic factor on outcome: time1
 
 # Calculate potential outcomes for time1 for all participants
 # time1 under control adds a small amount of random noise, so on average there is no effect of control on the baseline value
@@ -279,6 +285,7 @@ So why analyze change scores? First, @glymour2022 notes that in many clinical an
 To calculate a p-value and confidence interval, we can do a paired t-test (to reflect that we have two correlated measures per participant):
 
 ```{r}
+#| results: hold
 # Perform paired t-test
 t_test_result <- t.test(dataMod1$time1_x1, dataMod1$time1_x0, paired = TRUE)
 
@@ -301,6 +308,7 @@ The paired t-test shows a statistically significant difference between treatment
 The t-test for the change score `change1` gives identical results:
 
 ```{r}
+#| results: hold
 # Perform paired t-test
 t_test_result <- t.test(dataMod1$change1_x1, dataMod1$change1_x0, paired = TRUE)
 
@@ -445,7 +453,76 @@ unadjcov <- bal.tab(group ~ baseline + L, data = dataMod2, thresholds = c(m = .1
 love.plot(unadjcov, stars = "std", thresholds = c(m = .1))
 ```
 
-A general rule of thumb is that the standardized mean differences between covariates should fall between $+/-0.1$. As seen above, despite randomization, `baseline` in our RCT is outside this range, while `L` is inside. If the baseline values of the treatment and control group are balanced, then an unbiased average treatment effect is just the mean of `time2` for those in the treatment group minus the mean for those in the control group. Let's calculate that here and see if the baseline imbalance creates a biased estimate:
+```{r, eval=FALSE}
+# Load required libraries
+library(ggplot2)
+library(plotly)
+
+mean_baseline = mean(dataMod2$baseline)
+
+# Calculate predictions at mean baseline for each group
+pred1 <- predict(res_time1_group, newdata = data.frame(group = levels(dataMod2$group)[1], baseline = mean_baseline))
+pred2 <- predict(res_time1_group, newdata = data.frame(group = levels(dataMod2$group)[2], baseline = mean_baseline))
+
+# Create the plot
+p <- ggplot(dataMod2, aes(x = baseline, y = time1, color = group)) +
+  # Add points
+  geom_point(alpha = 0.6, size = 2) +
+  
+  # Add regression lines for each group
+  geom_smooth(method = "lm", se = TRUE, alpha = 0.2) +
+  
+  # Add vertical line at mean baseline
+  geom_vline(xintercept = mean_baseline, linetype = "dashed", color = "black", size = 0.8) +
+  
+  # Add points for the endpoints of the vertical line (these will be invisible)
+  geom_point(aes(x = mean_baseline, y = pred1, 
+                text = paste("Group:", levels(dataMod2$group)[1], 
+                           "<br>Baseline:", round(mean_baseline, 2),
+                           "<br>Predicted Time2:", round(pred1, 2))),
+             color = "red", size = 3, alpha = 0.8, inherit.aes = FALSE) +
+  
+  geom_point(aes(x = mean_baseline, y = pred2,
+                text = paste("Group:", levels(dataMod2$group)[2], 
+                           "<br>Baseline:", round(mean_baseline, 2),
+                           "<br>Predicted Time2:", round(pred2, 2))),
+             color = "red", size = 3, alpha = 0.8, inherit.aes = FALSE) +
+  
+  # Add the vertical line showing difference between groups at mean baseline
+  geom_segment(
+    x = mean_baseline, 
+    xend = mean_baseline,
+    y = pred1,
+    yend = pred2,
+    color = "red", 
+    size = 2,
+    arrow = arrow(ends = "both", angle = 90, length = unit(0.1, "inches"))
+  ) +
+  
+  # Customize the plot
+  labs(
+    title = "Time2 vs Baseline by Group",
+    subtitle = paste("Vertical line shows difference between groups at mean baseline (", 
+                    round(mean_baseline, 2), ")", sep = ""),
+    x = "Baseline",
+    y = "Time2",
+    color = "Group"
+  ) +
+  
+  # Clean theme
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 11, color = "gray40"),
+    legend.position = "bottom"
+  )
+
+# Convert to plotly for interactive tooltips
+ggplotly(p, tooltip = "text") %>%
+  layout(title = list(text = "Time1 vs Baseline by Group<br><sub>Vertical line shows difference between groups at mean baseline</sub>"))
+```
+
+A general rule of thumb is that the standardized mean differences between covariates should fall between $+/-0.1$. As seen above, both `L` and`baseline` fall within the threshold. If the baseline values of the treatment and control group are balanced, then an unbiased average treatment effect is just the mean of `time2` for those in the treatment group minus the mean for those in the control group. Let's calculate that here and see if the slight baseline imbalance creates a biased estimate:
 
 ```{r}
 means <- dataMod2 |>
@@ -455,7 +532,7 @@ rct_time1_mean_diff <- filter(means, group=="Treatment")$mean - filter(means, gr
 cat("Mean difference in time1 from RCT (Treatment - Control):", round(rct_time1_mean_diff, 3), "\n")
 ```
 
-Recall that the true causal effect is `{r} additive_effect` and the estimate from this data based on potential outcomes is `{r} po_estimate`. The estimate from the RCT is higher than both. Let's use regression to estimate the difference in means for `time1` between the treatment and control groups and give us a p-value and confidence interval:
+Recall that the true causal effect is `{r} additive_effect` and the estimate from this data based on potential outcomes is `{r} po_estimate`. The estimate from the RCT is lower than both. Let's use regression to estimate the difference in means for `time1` between the treatment and control groups and give us a p-value and confidence interval:
 
 ```{r}
 res_time1_group <- lm(time1 ~ group, data = dataMod2)
@@ -463,13 +540,16 @@ tbl_time1_group <- tbl_regression(res_time1_group, show_single_row = group)
 tbl_time1_group
 ```
 
-The treatment group showed significantly higher `time1` scores compared to the control group; however, the effect estimate is biased as a result of the baseline imbalance. Going back to the data, the mean baseline for the control group is lower than the mean in the treatment group:
+The treatment group showed significantly higher `time1` scores compared to the control group; however, the effect estimate is biased as a result of the slight baseline imbalance. Going back to the data, the mean baseline for the control group is higher than the mean in the treatment group:
 
 ```{r}
 baseline_means <- dataMod2 |>
   group_by(group) |>
   summarize(mean = mean(baseline))
-baseline_means
+gt(baseline_means) |>
+  tab_style(style = cell_text(weight = 'bold'),
+            locations = cells_column_labels()
+  )
 ```
 
 The difference between the mean baselines is
@@ -603,7 +683,7 @@ tbl_stack(
   )
 ```
 
-Here we see that the analysis of change scores using either the marginal effect of `group` on `change1` or ANCOVA recovers an unbiased estimate similar to marginal effect of `change1 (RCT)`. When analyzing follow-up scores, the marginal effect of `group` on `time1` (`time1 (RCT)` is biased and has a wide confidence interval, but ANCOVA eliminates the bias and produces a confidence interval equivalent to the change score analyses.
+Here we see that the analysis of change scores using either the marginal effect of `group` on `change1` or ANCOVA recovers an unbiased estimate similar to the marginal effect of `change1 (RCT)`. When analyzing follow-up scores, the marginal effect of `group` on `time1` (`time1 (RCT)` is biased and has a wide confidence interval, but ANCOVA eliminates the bias and produces a confidence interval equivalent to the change score analyses.
 
 Recall that with the noise in our data and the small sample size, the potential outcomes analysis (`time1 (PO)` and `change1 (PO)`) provide the gold standard estimate of the true effect, which in this model is `{r} additive_effect`.
 
@@ -620,7 +700,7 @@ Since baseline is not a confounder and there are no other confounders in the cau
 
 ### Summary
 
-Thus far we have seen that there are several nuances to analyzing change from baseline, even with an RCT. We also saw that ANCOVA provided the best estimate when analyzing both follow-up scores and change scores.
+Thus far we have seen that there are several nuances to analyzing change from baseline, even with an RCT. We also saw that ANCOVA provided the best oror equally good estimate when analyzing both follow-up scores and change scores.
 
 Now we turn to an RCT with loss to follow-up
 
@@ -633,11 +713,19 @@ Model 3 uses the RCT data, but simulates differential loss to follow-up, meaning
 ```{r}
 #| code-fold: true
 # Create the data frame with the specified percentages
-# TODO: This should use the variables in the data generating model
+
+# Calculate censoring probabilities
+prob_ltfu_unfavorable_control <- 0.15 # Probability of LTFU for L=1 in control group
+prob_ltfu_unfavorable_treatment <- 0.7 # Probability of LTFU for L=1 in treatment group
+prob_ltfu_favorable <- 0.02 # Probability of LTFU for L=0 in both groups
+
+
 table_data <- data.frame(
-  L = c("0", "1"),
-  Control = c("5%", "10%"),
-  Treatment = c("5%", "40%")
+L = c("0", "1"),
+Control = c(paste0(prob_ltfu_favorable * 100, "%"), 
+             paste0(prob_ltfu_unfavorable_control * 100, "%")),
+Treatment = c(paste0(prob_ltfu_favorable * 100, "%"), 
+               paste0(prob_ltfu_unfavorable_treatment * 100, "%"))
 )
 
 # Create the gt table
@@ -677,11 +765,6 @@ Let's generate the censored dataset:
 # Copy dataMod2
 dataMod3 <- dataMod2
 
-# Calculate censoring probabilities
-prob_ltfu_unfavorable_control <- 0.1 # Probability of LTFU for L=1 in control group
-prob_ltfu_unfavorable_treatment <- 0.4 # Probability of LTFU for L=1 in treatment group
-prob_ltfu_favorable <- 0.05 # Probability of LTFU for L=0 in both groups
-
 # Simulate differential loss to follow-up (LTFU) based on L and Treatment
 dataMod3$ltfu_prob <- ifelse(dataMod3$L == 1 & dataMod3$group == "Treatment", prob_ltfu_unfavorable_treatment,
                           ifelse(dataMod3$L == 1 & dataMod3$group == "Control", prob_ltfu_unfavorable_control,
@@ -698,7 +781,7 @@ dataMod3$change1[dataMod3$censored == 1] <- NA
 
 ### Summary Statistics
 
-As expected, the summary statistics comparing control and treatment groups show differential loss to follow-up even though $L = 1$ is balanced across the two groups:
+As expected, the summary statistics comparing control and treatment groups show differential loss to follow-up:
 
 ```{r}
 #| code-fold: true
@@ -754,7 +837,7 @@ The naive analysis of the data, that completely drops censored patients, underes
 
 ### Adjusting for Loss To Follow-up
 
-When we ignore patients who are lost to follow-up we run the risk of creating a selection bias. To see this, let's look at the causal dag for Model 3 including the censoring indicator:
+When we ignore patients who are lost to follow-up we run the risk of creating a selection bias. To see this, let's look at the causal DAG for Model 3 including the censoring indicator:
 
 ```{r, fig.width = 12, fig.height = 8}
 #| label: Model3_DAG
@@ -778,7 +861,7 @@ dagMod3 <- dagify(
 ggdag_status(dagMod3, use_labels = "name", text = FALSE) + theme_dag()
 ```
 
-To estimate the causal effect of `group` on `time1` we need to block any open backdoor paths between `group` and `time1` while keeping forward, causal, paths open. A backdoor path is a path from one variable to another where at least one arrow points back toward the first variable. There are two paths between `group` and `time`:
+To estimate the causal effect of `group` on `time1` we need to block any open backdoor paths between `group` and `time1` while keeping forward, causal, paths open. A backdoor path is an acyclic path from the treatment variable to the outcome variable where at least one arrow points back toward the treatment. There are two paths between `group` and `time`:
 
 ```{r}
 #| code-fold: true
@@ -803,11 +886,12 @@ df_paths %>%
     columns = path
   )
 
+# To show open paths graphically with censoring use this:
+# dag_paths(dagMod3, shadow=TRUE, adjust_for = "censored") + theme_dag()
+
 ```
 
-In this case, there is only one backdoor path: that going through `censored`; however, that path is blocked because `censored` along this path is a collider: a collider blocks the flow of association along the path. The second path from `group` to `time1` is open, meaning that association is allowed to flow along it.
-
-However, if we analyze only patients who remained in the study (were not censored) then through selection bias $censored = 1$, which means that we are adjusting `censored`.
+The second path from `group` to `time1` is open, meaning that association is allowed to flow along it. To get an unbiased estimate of the total effect of `group` on `time1` all forward (causal) paths from `group` to `time1` must be open and all backdoor (non-causal paths) must be closed. In this case, there is only one backdoor path: the path going through `censored`; however, as long as we don't adjust for `censored` that path is blocked because `censored` along this path is a collider. A collider blocks the flow of association along the path. However, if we analyze only patients who remained in the study (were not censored) then we are selecting only uncensored patients, which means that we are setting $censored = 1$, hence we are adjusting `censored`.
 
 When we adjust `censored`, we get the following graph that allows non-causal association to flow between `group` and `time1`:
 
@@ -817,7 +901,7 @@ ggdag_adjust(dagMod3, var = "censored", use_labels = "name",
   guides(shape = "none") + theme_dag() # remove redundant shapes legend 
 ```
 
-The square around `censored` and the color shows us that `censored` is now adjusted. As a result, the dashed line indicates that association can now flow between `group` and `L` and then on to `time`.
+The square around `censored` and the color shows us that `censored` is now adjusted. As a result, the dashed line indicates that association can flow between `group` and `L` and then on to `time`.
 
 ```{r, eval = FALSE}
 ggdag_adjustment_set(dagMod3) + theme_dag()
