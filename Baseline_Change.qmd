@@ -37,7 +37,9 @@ table caption {
 This is a work in progress and subject to change nearly daily. At this stage there are numerous inconsistencies as I work to create a single simulated dataset that demonstrates the desired issues at hand while analyzing change from baseline.
 :::
 
-The goal of this notebook is to demonstrate how to estimate treatment effects of a dichotomous (binary) treatment on change from a continuous baseline measure, such as in [@tennant2021]. For example, suppose we want to estimate the effect of a new drug vs. placebo for reducing blood pressure after 6 months of use. Here, the blood pressure at treatment assignment is the baseline value and blood pressure measured 6 months after treatment assignment is the follow-up measure. There are two common approaches to analyzing the outcome: (1) Compare the difference in the follow-up measures between the experimental and control group; or (2) Compare the difference in change scores between the two groups, where a change score for an individual is the difference between the follow-up blood pressure and the baseline blood pressure.
+The goal of this notebook is to demonstrate how to estimate treatment effects of a dichotomous (binary) treatment on change from a continuous baseline measure in both experimental and observational designs. For example, suppose we want to estimate the effect of a new drug vs. placebo for reducing blood pressure after 6 months of use. Here, the blood pressure at treatment assignment is the baseline value and blood pressure measured 6 months after treatment assignment is the follow-up measure.
+
+There are two common approaches to defining the outcome: (1) Compare the difference in the follow-up measures between the experimental and control group; or (2) Compare the difference in change scores between the two groups, where a change score for an individual is the difference between the follow-up blood pressure and the baseline blood pressure.
 
 We will use five increasingly complex data generating models to explore this problem:
 
@@ -128,7 +130,7 @@ $Y_1$: `time1` or `change1` depending on which outcome we are interested in
 
 $X$: `group` where 0 is control and 1 is treatment
 
-`L`: A binary prognostic factor that increases `time1` by a fixed amount when $L = 1$. Depending on what wish to demonstrate we may treat L as measured or unmeasured.
+`L`: A binary prognostic factor that increases `time1` by a fixed amount when $L = 1$. Depending on what we wish to demonstrate we may treat L as measured or unmeasured.
 
 Now let's simulate potential outcomes for the causal DAG shown above. In this simulation, the causal effect of treatment on `time1` is 10, meaning that treated patients will see their baseline score increase by 10 plus a random amount of normally distributed noise with mean 0 and standard deviation of 3 ($\mu = 0$, $\sigma = 3$), whereas control will see only the random change. The simulation calculates the potential outcomes `time1_x0` and `time1_x1` for all participants, where `x1` is the outcome under treatment, and `x0` under control. Likewise, the simulation also calculates potential outcomes of the change score: `change1_x0`, and `change1_x1`.
 
@@ -858,7 +860,15 @@ dagMod3 <- dagify(
   )
 )
 
-ggdag_status(dagMod3, use_labels = "name", text = FALSE) + theme_dag()
+ggdag_status(dagMod3, var = "censored",
+             text = TRUE, node_size = 25, text_size = 4) +
+  geom_dag_edges(start_cap = ggraph::circle(10, 'mm'),
+                 end_cap = ggraph::circle(10, 'mm'),  # Larger end cap for bigger nodes
+                 arrow_directed = grid::arrow(length = grid::unit(15, "pt"), 
+                                             type = "closed")) +
+  guides(shape = "none") + 
+  theme_dag() +
+  theme(plot.margin = margin(20, 20, 20, 20)) 
 ```
 
 To estimate the causal effect of `group` on `time1` we need to block any open backdoor paths between `group` and `time1` while keeping forward, causal, paths open. A backdoor path is an acyclic path from the treatment variable to the outcome variable where at least one arrow points back toward the treatment. There are two paths between `group` and `time`:
@@ -896,12 +906,19 @@ The second path from `group` to `time1` is open, meaning that association is all
 When we adjust `censored`, we get the following graph that allows non-causal association to flow between `group` and `time1`:
 
 ```{r, fig.width = 12, fig.height = 8}
-ggdag_adjust(dagMod3, var = "censored", use_labels = "name",
-             text = FALSE) +
-  guides(shape = "none") + theme_dag() # remove redundant shapes legend 
+ggdag_adjust(dagMod3, var = "censored",
+             text = TRUE, node_size = 25, text_size = 2.5) +
+  guides(shape = "none") + 
+  theme_dag() +
+  theme(plot.margin = margin(20, 20, 20, 20)) 
 ```
 
-The square around `censored` and the color shows us that `censored` is now adjusted. As a result, the dashed line indicates that association can flow between `group` and `L` and then on to `time`.
+The `censored` variable is shown with a square around it to indicate that by analyzing only uncensored patients, `censored` is adjusted for in the analysis. Since all arrows point into `censored`, any path from treatment `group` to effect `time2` that includes `censored` will transmit spurious association through `censored` unless the path is blocked at another point.
+
+To see this, lets look at all paths (causal and non-causal) from `group` to `time2`. A causal path is one in which arrows point from the treatment `group` to the outcome `time2`. Noncausal paths are those with at least one arrow pointing back toward the treatment.
+
+```{}
+```
 
 ```{r, eval = FALSE}
 ggdag_adjustment_set(dagMod3) + theme_dag()
@@ -970,10 +987,6 @@ ggplot(status_data, aes(x = x, y = y, xend = xend, yend = yend)) +
   theme(legend.position = "right")
 
 ```
-
-The `censored` variable is shown with a square around it to indicate that by analyzing only uncensored patients, `censored` is adjusted for in the analysis. Since all arrows point into `censored`, any path from treatment `group` to effect `time2` that includes `censored` will transmit spurious association through `censored` unless the path is blocked at another point.
-
-To see this, lets look at all paths (causal and non-causal) from `group` to `time2`. A causal path is one in which arrows point from the treatment `group` to the outcome `time2`. Noncausal paths are those with at least one arrow pointing back toward the treatment.
 
 ```{r}
 

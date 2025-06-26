@@ -221,7 +221,8 @@ Construction Zone
 <p>This is a work in progress and subject to change nearly daily. At this stage there are numerous inconsistencies as I work to create a single simulated dataset that demonstrates the desired issues at hand while analyzing change from baseline.</p>
 </div>
 </div>
-<p>The goal of this notebook is to demonstrate how to estimate treatment effects of a dichotomous (binary) treatment on change from a continuous baseline measure, such as in <span class="citation" data-cites="tennant2021">(<a href="#ref-tennant2021" role="doc-biblioref">Tennant et al. 2021</a>)</span>. For example, suppose we want to estimate the effect of a new drug vs.&nbsp;placebo for reducing blood pressure after 6 months of use. Here, the blood pressure at treatment assignment is the baseline value and blood pressure measured 6 months after treatment assignment is the follow-up measure. There are two common approaches to analyzing the outcome: (1) Compare the difference in the follow-up measures between the experimental and control group; or (2) Compare the difference in change scores between the two groups, where a change score for an individual is the difference between the follow-up blood pressure and the baseline blood pressure.</p>
+<p>The goal of this notebook is to demonstrate how to estimate treatment effects of a dichotomous (binary) treatment on change from a continuous baseline measure in both experimental and observational designs. For example, suppose we want to estimate the effect of a new drug vs.&nbsp;placebo for reducing blood pressure after 6 months of use. Here, the blood pressure at treatment assignment is the baseline value and blood pressure measured 6 months after treatment assignment is the follow-up measure.</p>
+<p>There are two common approaches to defining the outcome: (1) Compare the difference in the follow-up measures between the experimental and control group; or (2) Compare the difference in change scores between the two groups, where a change score for an individual is the difference between the follow-up blood pressure and the baseline blood pressure.</p>
 <p>We will use five increasingly complex data generating models to explore this problem:</p>
 <ol type="1">
 <li>A ground truth model where the potential outcomes (the outcome measure under both treatment and control) are known for all participants.</li>
@@ -315,7 +316,7 @@ Estimands vs Estimators
 <p><span class="math inline">\(Y_0\)</span>: <code>baseline</code></p>
 <p><span class="math inline">\(Y_1\)</span>: <code>time1</code> or <code>change1</code> depending on which outcome we are interested in</p>
 <p><span class="math inline">\(X\)</span>: <code>group</code> where 0 is control and 1 is treatment</p>
-<p><code>L</code>: A binary prognostic factor that increases <code>time1</code> by a fixed amount when <span class="math inline">\(L = 1\)</span>. Depending on what wish to demonstrate we may treat L as measured or unmeasured.</p>
+<p><code>L</code>: A binary prognostic factor that increases <code>time1</code> by a fixed amount when <span class="math inline">\(L = 1\)</span>. Depending on what we wish to demonstrate we may treat L as measured or unmeasured.</p>
 <p>Now let’s simulate potential outcomes for the causal DAG shown above. In this simulation, the causal effect of treatment on <code>time1</code> is 10, meaning that treated patients will see their baseline score increase by 10 plus a random amount of normally distributed noise with mean 0 and standard deviation of 3 (<span class="math inline">\(\mu = 0\)</span>, <span class="math inline">\(\sigma = 3\)</span>), whereas control will see only the random change. The simulation calculates the potential outcomes <code>time1_x0</code> and <code>time1_x1</code> for all participants, where <code>x1</code> is the outcome under treatment, and <code>x0</code> under control. Likewise, the simulation also calculates potential outcomes of the change score: <code>change1_x0</code>, and <code>change1_x1</code>.</p>
 <p>Finally, we use the potential outcomes for each participant to calculate the individual treatment effect for both <code>time1</code> and <code>change1</code>. An individual treatment effect for a participant is the difference between that person’s outcome under treatment and outcome under control.</p>
 <section id="data-generating-model" class="level3">
@@ -8435,7 +8436,15 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
 <span id="cb38-12"><a href="#cb38-12" aria-hidden="true" tabindex="-1"></a>  )</span>
 <span id="cb38-13"><a href="#cb38-13" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb38-14"><a href="#cb38-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb38-15"><a href="#cb38-15" aria-hidden="true" tabindex="-1"></a><span class="fu">ggdag_status</span>(dagMod3, <span class="at">use_labels =</span> <span class="st">"name"</span>, <span class="at">text =</span> <span class="cn">FALSE</span>) <span class="sc">+</span> <span class="fu">theme_dag</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb38-15"><a href="#cb38-15" aria-hidden="true" tabindex="-1"></a><span class="fu">ggdag_status</span>(dagMod3, <span class="at">var =</span> <span class="st">"censored"</span>,</span>
+<span id="cb38-16"><a href="#cb38-16" aria-hidden="true" tabindex="-1"></a>             <span class="at">text =</span> <span class="cn">TRUE</span>, <span class="at">node_size =</span> <span class="dv">25</span>, <span class="at">text_size =</span> <span class="dv">4</span>) <span class="sc">+</span></span>
+<span id="cb38-17"><a href="#cb38-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_dag_edges</span>(<span class="at">start_cap =</span> ggraph<span class="sc">::</span><span class="fu">circle</span>(<span class="dv">10</span>, <span class="st">'mm'</span>),</span>
+<span id="cb38-18"><a href="#cb38-18" aria-hidden="true" tabindex="-1"></a>                 <span class="at">end_cap =</span> ggraph<span class="sc">::</span><span class="fu">circle</span>(<span class="dv">10</span>, <span class="st">'mm'</span>),  <span class="co"># Larger end cap for bigger nodes</span></span>
+<span id="cb38-19"><a href="#cb38-19" aria-hidden="true" tabindex="-1"></a>                 <span class="at">arrow_directed =</span> grid<span class="sc">::</span><span class="fu">arrow</span>(<span class="at">length =</span> grid<span class="sc">::</span><span class="fu">unit</span>(<span class="dv">15</span>, <span class="st">"pt"</span>), </span>
+<span id="cb38-20"><a href="#cb38-20" aria-hidden="true" tabindex="-1"></a>                                             <span class="at">type =</span> <span class="st">"closed"</span>)) <span class="sc">+</span></span>
+<span id="cb38-21"><a href="#cb38-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">shape =</span> <span class="st">"none"</span>) <span class="sc">+</span> </span>
+<span id="cb38-22"><a href="#cb38-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_dag</span>() <span class="sc">+</span></span>
+<span id="cb38-23"><a href="#cb38-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.margin =</span> <span class="fu">margin</span>(<span class="dv">20</span>, <span class="dv">20</span>, <span class="dv">20</span>, <span class="dv">20</span>)) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
@@ -8472,23 +8481,23 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
 <span id="cb39-20"><a href="#cb39-20" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
-<div id="plehbsloze" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#plehbsloze table {
+<div id="lfmplehbsl" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#lfmplehbsl table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#plehbsloze thead, #plehbsloze tbody, #plehbsloze tfoot, #plehbsloze tr, #plehbsloze td, #plehbsloze th {
+#lfmplehbsl thead, #lfmplehbsl tbody, #lfmplehbsl tfoot, #lfmplehbsl tr, #lfmplehbsl td, #lfmplehbsl th {
   border-style: none;
 }
 
-#plehbsloze p {
+#lfmplehbsl p {
   margin: 0;
   padding: 0;
 }
 
-#plehbsloze .gt_table {
+#lfmplehbsl .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -8514,12 +8523,12 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
   border-left-color: #D3D3D3;
 }
 
-#plehbsloze .gt_caption {
+#lfmplehbsl .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#plehbsloze .gt_title {
+#lfmplehbsl .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -8531,7 +8540,7 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
   border-bottom-width: 0;
 }
 
-#plehbsloze .gt_subtitle {
+#lfmplehbsl .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -8543,7 +8552,7 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
   border-top-width: 0;
 }
 
-#plehbsloze .gt_heading {
+#lfmplehbsl .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -8555,13 +8564,13 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
   border-right-color: #D3D3D3;
 }
 
-#plehbsloze .gt_bottom_border {
+#lfmplehbsl .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#plehbsloze .gt_col_headings {
+#lfmplehbsl .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -8576,7 +8585,7 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
   border-right-color: #D3D3D3;
 }
 
-#plehbsloze .gt_col_heading {
+#lfmplehbsl .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -8596,7 +8605,7 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
   overflow-x: hidden;
 }
 
-#plehbsloze .gt_column_spanner_outer {
+#lfmplehbsl .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -8608,15 +8617,15 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
   padding-right: 4px;
 }
 
-#plehbsloze .gt_column_spanner_outer:first-child {
+#lfmplehbsl .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#plehbsloze .gt_column_spanner_outer:last-child {
+#lfmplehbsl .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#plehbsloze .gt_column_spanner {
+#lfmplehbsl .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -8628,11 +8637,11 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
   width: 100%;
 }
 
-#plehbsloze .gt_spanner_row {
+#lfmplehbsl .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#plehbsloze .gt_group_heading {
+#lfmplehbsl .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -8658,7 +8667,7 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
   text-align: left;
 }
 
-#plehbsloze .gt_empty_group_heading {
+#lfmplehbsl .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -8673,15 +8682,15 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
   vertical-align: middle;
 }
 
-#plehbsloze .gt_from_md > :first-child {
+#lfmplehbsl .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#plehbsloze .gt_from_md > :last-child {
+#lfmplehbsl .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#plehbsloze .gt_row {
+#lfmplehbsl .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -8700,7 +8709,7 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
   overflow-x: hidden;
 }
 
-#plehbsloze .gt_stub {
+#lfmplehbsl .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -8713,7 +8722,7 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
   padding-right: 5px;
 }
 
-#plehbsloze .gt_stub_row_group {
+#lfmplehbsl .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -8727,15 +8736,15 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
   vertical-align: top;
 }
 
-#plehbsloze .gt_row_group_first td {
+#lfmplehbsl .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#plehbsloze .gt_row_group_first th {
+#lfmplehbsl .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#plehbsloze .gt_summary_row {
+#lfmplehbsl .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -8745,16 +8754,16 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
   padding-right: 5px;
 }
 
-#plehbsloze .gt_first_summary_row {
+#lfmplehbsl .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#plehbsloze .gt_first_summary_row.thick {
+#lfmplehbsl .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#plehbsloze .gt_last_summary_row {
+#lfmplehbsl .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -8764,7 +8773,7 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
   border-bottom-color: #D3D3D3;
 }
 
-#plehbsloze .gt_grand_summary_row {
+#lfmplehbsl .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -8774,7 +8783,7 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
   padding-right: 5px;
 }
 
-#plehbsloze .gt_first_grand_summary_row {
+#lfmplehbsl .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -8784,7 +8793,7 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
   border-top-color: #D3D3D3;
 }
 
-#plehbsloze .gt_last_grand_summary_row_top {
+#lfmplehbsl .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -8794,11 +8803,11 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
   border-bottom-color: #D3D3D3;
 }
 
-#plehbsloze .gt_striped {
+#lfmplehbsl .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#plehbsloze .gt_table_body {
+#lfmplehbsl .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -8807,7 +8816,7 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
   border-bottom-color: #D3D3D3;
 }
 
-#plehbsloze .gt_footnotes {
+#lfmplehbsl .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -8821,7 +8830,7 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
   border-right-color: #D3D3D3;
 }
 
-#plehbsloze .gt_footnote {
+#lfmplehbsl .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -8830,7 +8839,7 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
   padding-right: 5px;
 }
 
-#plehbsloze .gt_sourcenotes {
+#lfmplehbsl .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -8844,7 +8853,7 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
   border-right-color: #D3D3D3;
 }
 
-#plehbsloze .gt_sourcenote {
+#lfmplehbsl .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -8852,72 +8861,72 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
   padding-right: 5px;
 }
 
-#plehbsloze .gt_left {
+#lfmplehbsl .gt_left {
   text-align: left;
 }
 
-#plehbsloze .gt_center {
+#lfmplehbsl .gt_center {
   text-align: center;
 }
 
-#plehbsloze .gt_right {
+#lfmplehbsl .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#plehbsloze .gt_font_normal {
+#lfmplehbsl .gt_font_normal {
   font-weight: normal;
 }
 
-#plehbsloze .gt_font_bold {
+#lfmplehbsl .gt_font_bold {
   font-weight: bold;
 }
 
-#plehbsloze .gt_font_italic {
+#lfmplehbsl .gt_font_italic {
   font-style: italic;
 }
 
-#plehbsloze .gt_super {
+#lfmplehbsl .gt_super {
   font-size: 65%;
 }
 
-#plehbsloze .gt_footnote_marks {
+#lfmplehbsl .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#plehbsloze .gt_asterisk {
+#lfmplehbsl .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#plehbsloze .gt_indent_1 {
+#lfmplehbsl .gt_indent_1 {
   text-indent: 5px;
 }
 
-#plehbsloze .gt_indent_2 {
+#lfmplehbsl .gt_indent_2 {
   text-indent: 10px;
 }
 
-#plehbsloze .gt_indent_3 {
+#lfmplehbsl .gt_indent_3 {
   text-indent: 15px;
 }
 
-#plehbsloze .gt_indent_4 {
+#lfmplehbsl .gt_indent_4 {
   text-indent: 20px;
 }
 
-#plehbsloze .gt_indent_5 {
+#lfmplehbsl .gt_indent_5 {
   text-indent: 25px;
 }
 
-#plehbsloze .katex-display {
+#lfmplehbsl .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#plehbsloze div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#lfmplehbsl div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -8955,9 +8964,11 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
 <p>The second path from <code>group</code> to <code>time1</code> is open, meaning that association is allowed to flow along it. To get an unbiased estimate of the total effect of <code>group</code> on <code>time1</code> all forward (causal) paths from <code>group</code> to <code>time1</code> must be open and all backdoor (non-causal paths) must be closed. In this case, there is only one backdoor path: the path going through <code>censored</code>; however, as long as we don’t adjust for <code>censored</code> that path is blocked because <code>censored</code> along this path is a collider. A collider blocks the flow of association along the path. However, if we analyze only patients who remained in the study (were not censored) then we are selecting only uncensored patients, which means that we are setting <span class="math inline">\(censored = 1\)</span>, hence we are adjusting <code>censored</code>.</p>
 <p>When we adjust <code>censored</code>, we get the following graph that allows non-causal association to flow between <code>group</code> and <code>time1</code>:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggdag_adjust</span>(dagMod3, <span class="at">var =</span> <span class="st">"censored"</span>, <span class="at">use_labels =</span> <span class="st">"name"</span>,</span>
-<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>             <span class="at">text =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
-<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">shape =</span> <span class="st">"none"</span>) <span class="sc">+</span> <span class="fu">theme_dag</span>() <span class="co"># remove redundant shapes legend </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggdag_adjust</span>(dagMod3, <span class="at">var =</span> <span class="st">"censored"</span>,</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>             <span class="at">text =</span> <span class="cn">TRUE</span>, <span class="at">node_size =</span> <span class="dv">25</span>, <span class="at">text_size =</span> <span class="fl">2.5</span>) <span class="sc">+</span></span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">shape =</span> <span class="st">"none"</span>) <span class="sc">+</span> </span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_dag</span>() <span class="sc">+</span></span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.margin =</span> <span class="fu">margin</span>(<span class="dv">20</span>, <span class="dv">20</span>, <span class="dv">20</span>, <span class="dv">20</span>)) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -8966,88 +8977,88 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
 </div>
 </div>
 </div>
-<p>The square around <code>censored</code> and the color shows us that <code>censored</code> is now adjusted. As a result, the dashed line indicates that association can flow between <code>group</code> and <code>L</code> and then on to <code>time</code>.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggdag_adjustment_set</span>(dagMod3) <span class="sc">+</span> <span class="fu">theme_dag</span>()</span>
-<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>dagMod3_censor_adjustment <span class="ot">&lt;-</span> <span class="fu">adjust_for</span>(dagMod3,<span class="at">var =</span> <span class="st">"censored"</span>)</span>
-<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>gg_dagMod3_censored <span class="ot">&lt;-</span> <span class="fu">ggdag_adjust</span>(dagMod3, <span class="at">var =</span> <span class="st">"censored"</span>) <span class="sc">+</span></span>
-<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">shape =</span> <span class="st">"none"</span>) <span class="co"># remove redundant shapes legend</span></span>
-<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a>gg_dagMod3_censored</span>
-<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Get the tidy DAG out of the graph</span></span>
-<span id="cb42-11"><a href="#cb42-11" aria-hidden="true" tabindex="-1"></a>dagMod3_censored <span class="ot">&lt;-</span> gg_dagMod3_censored<span class="sc">$</span>data</span>
-<span id="cb42-12"><a href="#cb42-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-13"><a href="#cb42-13" aria-hidden="true" tabindex="-1"></a><span class="co">#List all paths from treatment `group` to outcome `time2`</span></span>
-<span id="cb42-14"><a href="#cb42-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-15"><a href="#cb42-15" aria-hidden="true" tabindex="-1"></a><span class="co"># `paths` currently ignores the adjusted nodes when determining which paths are open, so we have to specify adjusted nodes in the call</span></span>
-<span id="cb42-16"><a href="#cb42-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-17"><a href="#cb42-17" aria-hidden="true" tabindex="-1"></a>paths <span class="ot">&lt;-</span> <span class="fu">ggdag_paths</span>(dagMod3_censored) <span class="co">#Z = adjustedNodes(dagMod3))</span></span>
-<span id="cb42-18"><a href="#cb42-18" aria-hidden="true" tabindex="-1"></a>df_paths <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">path =</span> paths<span class="sc">$</span>paths,</span>
-<span id="cb42-19"><a href="#cb42-19" aria-hidden="true" tabindex="-1"></a>                       <span class="at">open =</span> paths<span class="sc">$</span>open)</span>
-<span id="cb42-20"><a href="#cb42-20" aria-hidden="true" tabindex="-1"></a><span class="fu">kable</span>(df_paths, </span>
-<span id="cb42-21"><a href="#cb42-21" aria-hidden="true" tabindex="-1"></a>      <span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">"Path"</span>, <span class="st">"Open"</span>),</span>
-<span id="cb42-22"><a href="#cb42-22" aria-hidden="true" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">"Causal Paths and Their Status"</span>,</span>
-<span id="cb42-23"><a href="#cb42-23" aria-hidden="true" tabindex="-1"></a>      <span class="at">align =</span> <span class="fu">c</span>(<span class="st">"l"</span>, <span class="st">"c"</span>))</span>
-<span id="cb42-24"><a href="#cb42-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-25"><a href="#cb42-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-26"><a href="#cb42-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-27"><a href="#cb42-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Print the adjustment sets (if any)</span></span>
-<span id="cb42-28"><a href="#cb42-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-29"><a href="#cb42-29" aria-hidden="true" tabindex="-1"></a><span class="fu">adjustmentSets</span>(dagMod3)</span>
-<span id="cb42-30"><a href="#cb42-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-31"><a href="#cb42-31" aria-hidden="true" tabindex="-1"></a>tidy_dagMod3 <span class="ot">&lt;-</span> <span class="fu">tidy_dagitty</span>(dag1) <span class="sc">|&gt;</span></span>
-<span id="cb42-32"><a href="#cb42-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">shape =</span> <span class="fu">ifelse</span>(name <span class="sc">==</span> <span class="st">"censored"</span>, <span class="st">"square"</span>, <span class="st">"circle"</span>))</span>
-<span id="cb42-33"><a href="#cb42-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-34"><a href="#cb42-34" aria-hidden="true" tabindex="-1"></a><span class="co"># Indicate that `censored` is adjusted for in this model</span></span>
-<span id="cb42-35"><a href="#cb42-35" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-36"><a href="#cb42-36" aria-hidden="true" tabindex="-1"></a>tidy_dag1 <span class="ot">&lt;-</span> <span class="fu">adjust_for</span>(tidy_dag1, <span class="st">"censored"</span>)</span>
-<span id="cb42-37"><a href="#cb42-37" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-38"><a href="#cb42-38" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot with custom node shapes</span></span>
-<span id="cb42-39"><a href="#cb42-39" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-40"><a href="#cb42-40" aria-hidden="true" tabindex="-1"></a><span class="co"># Get the status (exposure, outcome) information</span></span>
-<span id="cb42-41"><a href="#cb42-41" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-42"><a href="#cb42-42" aria-hidden="true" tabindex="-1"></a>status_data <span class="ot">&lt;-</span> <span class="fu">ggdag_status</span>(tidy_dag1)<span class="sc">$</span>data</span>
-<span id="cb42-43"><a href="#cb42-43" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-44"><a href="#cb42-44" aria-hidden="true" tabindex="-1"></a>status_data <span class="ot">&lt;-</span> status_data <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">gstatus =</span> <span class="fu">as.character</span>(status), <span class="at">gstatus =</span> <span class="fu">ifelse</span>(name <span class="sc">==</span> <span class="st">"censored"</span>, <span class="st">"adjusted"</span>, <span class="fu">as.character</span>(status)),</span>
-<span id="cb42-45"><a href="#cb42-45" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-46"><a href="#cb42-46" aria-hidden="true" tabindex="-1"></a>                                      <span class="at">gstatus =</span> <span class="fu">factor</span>(gstatus,<span class="at">levels =</span> <span class="fu">c</span>(<span class="fu">levels</span>(status), <span class="st">"adjusted"</span>)))</span>
-<span id="cb42-47"><a href="#cb42-47" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-48"><a href="#cb42-48" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot with custom node shapes while preserving status coloring</span></span>
-<span id="cb42-49"><a href="#cb42-49" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-50"><a href="#cb42-50" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(status_data, <span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> y, <span class="at">xend =</span> xend, <span class="at">yend =</span> yend)) <span class="sc">+</span></span>
-<span id="cb42-51"><a href="#cb42-51" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-52"><a href="#cb42-52" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_dag_edges</span>(<span class="at">arrow_directed =</span> grid<span class="sc">::</span><span class="fu">arrow</span>(<span class="at">length =</span> <span class="fu">unit</span>(<span class="fl">0.5</span>, <span class="st">"cm"</span>), <span class="at">type =</span> <span class="st">"closed"</span>)) <span class="sc">+</span></span>
-<span id="cb42-53"><a href="#cb42-53" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-54"><a href="#cb42-54" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_dag_point</span>(<span class="fu">aes</span>(<span class="at">color =</span> gstatus, <span class="at">shape =</span> shape), <span class="at">size =</span> <span class="dv">24</span>) <span class="sc">+</span></span>
-<span id="cb42-55"><a href="#cb42-55" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-56"><a href="#cb42-56" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_dag_text</span>(<span class="at">color =</span> <span class="st">"white"</span>) <span class="sc">+</span></span>
-<span id="cb42-57"><a href="#cb42-57" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-58"><a href="#cb42-58" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_shape_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="at">circle =</span> <span class="dv">16</span>, <span class="at">square =</span> <span class="dv">15</span>), <span class="at">guide =</span> <span class="st">"none"</span>) <span class="sc">+</span></span>
-<span id="cb42-59"><a href="#cb42-59" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-60"><a href="#cb42-60" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_discrete</span>(<span class="at">name =</span> <span class="st">"Status"</span>, <span class="at">na.value =</span> <span class="st">"grey50"</span>) <span class="sc">+</span></span>
-<span id="cb42-61"><a href="#cb42-61" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-62"><a href="#cb42-62" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_dag</span>() <span class="sc">+</span></span>
-<span id="cb42-63"><a href="#cb42-63" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb42-64"><a href="#cb42-64" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"right"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
 <p>The <code>censored</code> variable is shown with a square around it to indicate that by analyzing only uncensored patients, <code>censored</code> is adjusted for in the analysis. Since all arrows point into <code>censored</code>, any path from treatment <code>group</code> to effect <code>time2</code> that includes <code>censored</code> will transmit spurious association through <code>censored</code> unless the path is blocked at another point.</p>
 <p>To see this, lets look at all paths (causal and non-causal) from <code>group</code> to <code>time2</code>. A causal path is one in which arrows point from the treatment <code>group</code> to the outcome <code>time2</code>. Noncausal paths are those with at least one arrow pointing back toward the treatment.</p>
+<pre><code></code></pre>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="co"># `paths` currently ignores the adjusted nodes when determining which paths are open, so we have to specify the adjusted nodes in the call</span></span>
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggdag_adjustment_set</span>(dagMod3) <span class="sc">+</span> <span class="fu">theme_dag</span>()</span>
 <span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a><span class="co">#paths(dag1, Z = adjustedNodes(dag1))</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>dagMod3_censor_adjustment <span class="ot">&lt;-</span> <span class="fu">adjust_for</span>(dagMod3,<span class="at">var =</span> <span class="st">"censored"</span>)</span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a>gg_dagMod3_censored <span class="ot">&lt;-</span> <span class="fu">ggdag_adjust</span>(dagMod3, <span class="at">var =</span> <span class="st">"censored"</span>) <span class="sc">+</span></span>
+<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">shape =</span> <span class="st">"none"</span>) <span class="co"># remove redundant shapes legend</span></span>
+<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a>gg_dagMod3_censored</span>
+<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-10"><a href="#cb43-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Get the tidy DAG out of the graph</span></span>
+<span id="cb43-11"><a href="#cb43-11" aria-hidden="true" tabindex="-1"></a>dagMod3_censored <span class="ot">&lt;-</span> gg_dagMod3_censored<span class="sc">$</span>data</span>
+<span id="cb43-12"><a href="#cb43-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-13"><a href="#cb43-13" aria-hidden="true" tabindex="-1"></a><span class="co">#List all paths from treatment `group` to outcome `time2`</span></span>
+<span id="cb43-14"><a href="#cb43-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-15"><a href="#cb43-15" aria-hidden="true" tabindex="-1"></a><span class="co"># `paths` currently ignores the adjusted nodes when determining which paths are open, so we have to specify adjusted nodes in the call</span></span>
+<span id="cb43-16"><a href="#cb43-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-17"><a href="#cb43-17" aria-hidden="true" tabindex="-1"></a>paths <span class="ot">&lt;-</span> <span class="fu">ggdag_paths</span>(dagMod3_censored) <span class="co">#Z = adjustedNodes(dagMod3))</span></span>
+<span id="cb43-18"><a href="#cb43-18" aria-hidden="true" tabindex="-1"></a>df_paths <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">path =</span> paths<span class="sc">$</span>paths,</span>
+<span id="cb43-19"><a href="#cb43-19" aria-hidden="true" tabindex="-1"></a>                       <span class="at">open =</span> paths<span class="sc">$</span>open)</span>
+<span id="cb43-20"><a href="#cb43-20" aria-hidden="true" tabindex="-1"></a><span class="fu">kable</span>(df_paths, </span>
+<span id="cb43-21"><a href="#cb43-21" aria-hidden="true" tabindex="-1"></a>      <span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">"Path"</span>, <span class="st">"Open"</span>),</span>
+<span id="cb43-22"><a href="#cb43-22" aria-hidden="true" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">"Causal Paths and Their Status"</span>,</span>
+<span id="cb43-23"><a href="#cb43-23" aria-hidden="true" tabindex="-1"></a>      <span class="at">align =</span> <span class="fu">c</span>(<span class="st">"l"</span>, <span class="st">"c"</span>))</span>
+<span id="cb43-24"><a href="#cb43-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-25"><a href="#cb43-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-26"><a href="#cb43-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-27"><a href="#cb43-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Print the adjustment sets (if any)</span></span>
+<span id="cb43-28"><a href="#cb43-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-29"><a href="#cb43-29" aria-hidden="true" tabindex="-1"></a><span class="fu">adjustmentSets</span>(dagMod3)</span>
+<span id="cb43-30"><a href="#cb43-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-31"><a href="#cb43-31" aria-hidden="true" tabindex="-1"></a>tidy_dagMod3 <span class="ot">&lt;-</span> <span class="fu">tidy_dagitty</span>(dag1) <span class="sc">|&gt;</span></span>
+<span id="cb43-32"><a href="#cb43-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">shape =</span> <span class="fu">ifelse</span>(name <span class="sc">==</span> <span class="st">"censored"</span>, <span class="st">"square"</span>, <span class="st">"circle"</span>))</span>
+<span id="cb43-33"><a href="#cb43-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-34"><a href="#cb43-34" aria-hidden="true" tabindex="-1"></a><span class="co"># Indicate that `censored` is adjusted for in this model</span></span>
+<span id="cb43-35"><a href="#cb43-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-36"><a href="#cb43-36" aria-hidden="true" tabindex="-1"></a>tidy_dag1 <span class="ot">&lt;-</span> <span class="fu">adjust_for</span>(tidy_dag1, <span class="st">"censored"</span>)</span>
+<span id="cb43-37"><a href="#cb43-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-38"><a href="#cb43-38" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot with custom node shapes</span></span>
+<span id="cb43-39"><a href="#cb43-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-40"><a href="#cb43-40" aria-hidden="true" tabindex="-1"></a><span class="co"># Get the status (exposure, outcome) information</span></span>
+<span id="cb43-41"><a href="#cb43-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-42"><a href="#cb43-42" aria-hidden="true" tabindex="-1"></a>status_data <span class="ot">&lt;-</span> <span class="fu">ggdag_status</span>(tidy_dag1)<span class="sc">$</span>data</span>
+<span id="cb43-43"><a href="#cb43-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-44"><a href="#cb43-44" aria-hidden="true" tabindex="-1"></a>status_data <span class="ot">&lt;-</span> status_data <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">gstatus =</span> <span class="fu">as.character</span>(status), <span class="at">gstatus =</span> <span class="fu">ifelse</span>(name <span class="sc">==</span> <span class="st">"censored"</span>, <span class="st">"adjusted"</span>, <span class="fu">as.character</span>(status)),</span>
+<span id="cb43-45"><a href="#cb43-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-46"><a href="#cb43-46" aria-hidden="true" tabindex="-1"></a>                                      <span class="at">gstatus =</span> <span class="fu">factor</span>(gstatus,<span class="at">levels =</span> <span class="fu">c</span>(<span class="fu">levels</span>(status), <span class="st">"adjusted"</span>)))</span>
+<span id="cb43-47"><a href="#cb43-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-48"><a href="#cb43-48" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot with custom node shapes while preserving status coloring</span></span>
+<span id="cb43-49"><a href="#cb43-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-50"><a href="#cb43-50" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(status_data, <span class="fu">aes</span>(<span class="at">x =</span> x, <span class="at">y =</span> y, <span class="at">xend =</span> xend, <span class="at">yend =</span> yend)) <span class="sc">+</span></span>
+<span id="cb43-51"><a href="#cb43-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-52"><a href="#cb43-52" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_dag_edges</span>(<span class="at">arrow_directed =</span> grid<span class="sc">::</span><span class="fu">arrow</span>(<span class="at">length =</span> <span class="fu">unit</span>(<span class="fl">0.5</span>, <span class="st">"cm"</span>), <span class="at">type =</span> <span class="st">"closed"</span>)) <span class="sc">+</span></span>
+<span id="cb43-53"><a href="#cb43-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-54"><a href="#cb43-54" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_dag_point</span>(<span class="fu">aes</span>(<span class="at">color =</span> gstatus, <span class="at">shape =</span> shape), <span class="at">size =</span> <span class="dv">24</span>) <span class="sc">+</span></span>
+<span id="cb43-55"><a href="#cb43-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-56"><a href="#cb43-56" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_dag_text</span>(<span class="at">color =</span> <span class="st">"white"</span>) <span class="sc">+</span></span>
+<span id="cb43-57"><a href="#cb43-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-58"><a href="#cb43-58" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_shape_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="at">circle =</span> <span class="dv">16</span>, <span class="at">square =</span> <span class="dv">15</span>), <span class="at">guide =</span> <span class="st">"none"</span>) <span class="sc">+</span></span>
+<span id="cb43-59"><a href="#cb43-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-60"><a href="#cb43-60" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_discrete</span>(<span class="at">name =</span> <span class="st">"Status"</span>, <span class="at">na.value =</span> <span class="st">"grey50"</span>) <span class="sc">+</span></span>
+<span id="cb43-61"><a href="#cb43-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-62"><a href="#cb43-62" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_dag</span>() <span class="sc">+</span></span>
+<span id="cb43-63"><a href="#cb43-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-64"><a href="#cb43-64" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">"right"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="co"># `paths` currently ignores the adjusted nodes when determining which paths are open, so we have to specify the adjusted nodes in the call</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a><span class="co">#paths(dag1, Z = adjustedNodes(dag1))</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>We see that there are 18 paths from <code>group</code> to <code>time2</code>. $open is a boolean list showing whether each path is open or closed. All of these paths are open and since many of these paths are noncausal “backdoor” paths, meaning the arrows do not all point from <code>group</code> to <code>time2</code> this means that if we measure the association between <code>group</code> and <code>time2</code> in the data, that association is likely to exhibit bias from confounding. For example, paths 1 through 11 are all backdoor paths that go through <code>censored</code>. A collider is a variable on a path in which both arrows point toward it. As you can see, <code>censored</code> is a collider on every path it appears in. Colliders block association when they are not adjusted, but allow association to flow and bias the analysis when they are adjusted.</p>
 <p>To properly measure the total causal effect of <code>group</code> on <code>time2</code> we need to measure the association that flows through all paths that point from <code>group</code> to <code>time2</code>. Let’s use <code>paths</code> to list only the causal paths:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="co">#paths(dag1, Z = adjustedNodes(dag1), directed = TRUE)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="co">#paths(dag1, Z = adjustedNodes(dag1), directed = TRUE)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>There are two causal paths, both open. To measure the total causal effect, we need to block the non-causal open paths by adjusting for variables, if possible. We can use <code>ggdag</code> to list the adjustment sets for the total causal effect of <code>group</code> on <code>time2</code>. This returns nothing because there is no way to adjust variables to block the open path caused through the collider <code>censored.</code></p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="co">#adjustmentSets(dag1, effect = "total")</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="co">#adjustmentSets(dag1, effect = "total")</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>We will use IP Weighting for censoring below, but before that, lets analyze this dataset as if there were no loss to follow-up.</p>
 <!-- ```{r} -->
@@ -10209,9 +10220,6 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
 <div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
 <div id="ref-glymour2022" class="csl-entry" role="listitem">
 Glymour, M Maria. 2022. <span>“Commentary: Modelling Change in a Causal Framework.”</span> <em>International Journal of Epidemiology</em> 51 (5): 1615–21. <a href="https://doi.org/10.1093/ije/dyac151">https://doi.org/10.1093/ije/dyac151</a>.
-</div>
-<div id="ref-tennant2021" class="csl-entry" role="listitem">
-Tennant, Peter W G, Kellyn F Arnold, George T H Ellison, and Mark S Gilthorpe. 2021. <span>“Analyses of <span>‘</span>Change Scores<span>’</span> Do Not Estimate Causal Effects in Observational Data.”</span> <em>International Journal of Epidemiology</em> 51 (5): 1604–15. <a href="https://doi.org/10.1093/ije/dyab050">https://doi.org/10.1093/ije/dyab050</a>.
 </div>
 </div></section></div></main>
 <!-- /main column -->
