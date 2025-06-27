@@ -18,9 +18,10 @@ library(dagitty)
 library(ggdag)
 library(tidyverse)
 library(DT)
-library(gtsummary)
-library(kableExtra)
 library(gt)
+library(gtsummary)
+library(knitr)
+library(kableExtra)
 #  usethis::use_github_pages("main") # Tell github to publish on github pages
 ```
 
@@ -190,13 +191,19 @@ dataMod1 <- data.frame(
   ite_change1 = ite_change1
 )
 
-real_cols <- which(sapply(dataMod1, function(x) {
-  is.numeric(x) && any(x %% 1 != 0, na.rm = TRUE)
-}))
-datatable(dataMod1, 
-          options = list(pageLength = 10),
-          class = "display compact stripe") |>
-  formatRound(columns = real_cols, digits = 2)
+# Create the kable table with first 10 rows
+dataMod1 %>%
+  head(10) %>%
+  kable(format = "html", digits = 2) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover", "condensed", "responsive"),
+    full_width = FALSE,
+    position = "left"
+  )
+
+```
+
+```{}
 ```
 
 In this data there is no variable for `group`, because we generated the potential outcomes for all participants under both control and treatment. We will use `group` in the next model to simulate treatment assignment for an RCT.
@@ -915,9 +922,25 @@ ggdag_adjust(dagMod3, var = "censored",
 
 The `censored` variable is shown with a square around it to indicate that by analyzing only uncensored patients, `censored` is adjusted for in the analysis. Since all arrows point into `censored`, any path from treatment `group` to effect `time2` that includes `censored` will transmit spurious association through `censored` unless the path is blocked at another point.
 
-To see this, lets look at all paths (causal and non-causal) from `group` to `time2`. A causal path is one in which arrows point from the treatment `group` to the outcome `time2`. Noncausal paths are those with at least one arrow pointing back toward the treatment.
+The naive analysis answers the causal question: What is the effect of treatment on the outcome among patients who were not lost to follow-up. Instead, we want to know the causal effect of the treatment on the outcome *had no one been lost to follow-up*.
 
-```{}
+According to Pearl's causal inference framework [@pearl2010], adjusting for `L` will block the non-causal path. One way to do this is by adding `L` as a covariate to the regression:
+
+```{r}
+
+tbl_time1_ANCOVA_LTFU_Adj <- 
+  tbl_regression(lm(time1 ~ group + baseline + L, data = dataMod3),
+                 show_single_row = c("group"),
+                 include = "group")
+tbl_change1_ANCOVA_LTFU_Adj <- 
+  tbl_regression(lm(change1 ~ group + baseline + L, data = dataMod3),
+                 show_single_row = c("group"),
+                 include = "group")
+```
+
+To avoid selection bias we need to block the association that flows through the non-causal path.
+
+```         
 ```
 
 ```{r, eval = FALSE}
