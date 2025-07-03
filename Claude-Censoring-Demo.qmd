@@ -1,0 +1,175 @@
+---
+title: "RCT Censoring Examples"
+author: "Todd R. Johnson"
+format: html
+editor: visual
+---
+
+## Quarto
+
+Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+
+## Running Code
+
+When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{r}
+# Install the latest version from GitHub if needed
+# Uncomment these lines to install the GitHub version:
+# if (!require(remotes)) install.packages("remotes")
+# remotes::install_github("r-causal/ggdag")
+
+library(ggdag)
+library(ggplot2)
+library(dplyr)
+
+# Create the DAG structure - try without custom labels first
+# Treatment -> Censoring <- Measured Confounder -> Outcome
+selection_dag_simple <- dagify(
+  Censoring ~ Treatment + Age,
+  Outcome ~ Age,
+  exposure = "Treatment",
+  outcome = "Outcome",
+  coords = list(
+    x = c(Treatment = 1, Age = 3, Censoring = 2, Outcome = 4),
+    y = c(Treatment = 2, Age = 2, Censoring = 1, Outcome = 2)
+  )
+)
+
+cat("Checking simple DAG object class:\n")
+cat("Class of selection_dag_simple:", class(selection_dag_simple), "\n")
+
+# Convert to tidy_dagitty explicitly
+tidy_selection_dag <- tidy_dagitty(selection_dag_simple)
+cat("Class of tidy_selection_dag:", class(tidy_selection_dag), "\n")
+
+# Check the structure of the tidy object
+cat("\nStructure of tidy_dagitty object:\n")
+str(tidy_selection_dag)
+
+# Check what dagitty sees as exposure and outcome
+cat("Exposure variables:", dagitty::exposures(selection_dag_simple), "\n")
+cat("Outcome variables:", dagitty::outcomes(selection_dag_simple), "\n")
+
+# Try dag_paths with the simple version
+cat("\nTrying dag_paths with simple DAG (no custom labels):\n")
+try({
+  paths_result <- dag_paths(tidy_selection_dag, from = "Treatment", to = "Outcome")
+  print(paths_result)
+}, silent = FALSE)
+
+# If that works, add labels as a separate step
+if (exists("paths_result")) {
+  cat("\nSuccess! Now trying with labels added separately:\n")
+  # Add labels to the existing tidy object
+  tidy_selection_dag$data$label <- case_when(
+    tidy_selection_dag$data$name == "Treatment" ~ "Treatment",
+    tidy_selection_dag$data$name == "Age" ~ "Age\n(Measured)",
+    tidy_selection_dag$data$name == "Censoring" ~ "Censoring", 
+    tidy_selection_dag$data$name == "Outcome" ~ "Outcome",
+    TRUE ~ tidy_selection_dag$data$name
+  )
+}
+
+# Plot the basic DAG using the working version
+p1 <- ggdag(tidy_selection_dag, text = FALSE, use_labels = "name") +
+  theme_dag_blank() +
+  labs(title = "Selection Bias via Collider: Measured Confounder",
+       subtitle = "Censoring is a collider of Treatment and Age") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+print(p1)
+
+# Show what happens when we condition on censoring (selection)
+# This opens a backdoor path: Treatment <- Censoring -> Age -> Outcome
+p2 <- selection_dag %>%
+  control_for("Censoring") %>%
+  ggdag_adjust(text = FALSE, use_labels = "label") +
+  theme_dag_blank() +
+  labs(title = "Conditioning on Censoring (Analyzing Only Completers)",
+       subtitle = "Opens backdoor path: Treatment ← Censoring → Age → Outcome",
+       caption = "Red = Conditioned variable, Blue = Adjusted paths") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+print(p2)
+
+# Show the paths - ensuring proper object class
+cat("Checking DAG object class:\n")
+cat("Class of selection_dag:", class(selection_dag), "\n")
+
+# Convert to tidy_dagitty explicitly
+tidy_selection_dag <- tidy_dagitty(selection_dag)
+cat("Class of tidy_selection_dag:", class(tidy_selection_dag), "\n")
+
+# Check what dagitty sees as exposure and outcome
+cat("Exposure variables:", dagitty::exposures(selection_dag), "\n")
+cat("Outcome variables:", dagitty::outcomes(selection_dag), "\n")
+
+# Try dag_paths with the tidy version
+cat("\nTrying dag_paths with tidy_dagitty object:\n")
+paths_result <- dag_paths(tidy_selection_dag, from = "Treatment", to = "Outcome")
+print(paths_result)
+
+# Visualize the paths using the tidy version
+p_paths <- ggdag_paths(tidy_selection_dag, from = "Treatment", to = "Outcome",
+                       text = FALSE, use_labels = "label") +
+  theme_dag_blank() +
+  labs(title = "All Paths from Treatment to Outcome",
+       subtitle = "Note: No open paths in original DAG (blocked by collider)") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+print(p_paths)
+
+# Show what adjustment for Age does (it doesn't help!)
+p3 <- selection_dag %>%
+  control_for(c("Censoring", "Age")) %>%
+  ggdag_adjust(text = FALSE, use_labels = "label") +
+  theme_dag_blank() +
+  labs(title = "Adjusting for Age After Conditioning on Censoring",
+       subtitle = "Bias remains because we're adjusting post-selection",
+       caption = "Adjustment cannot fix the collider bias created by selection") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+print(p3)
+
+# Alternative view showing the problem more clearly
+# Let's add a selection indicator
+selection_dag_explicit <- dagify(
+  Censoring ~ Treatment + Age,
+  Outcome ~ Age,
+  Observed ~ Censoring,  # We only observe when not censored
+  coords = list(
+    x = c(Treatment = 1, Age = 3, Censoring = 2, Outcome = 4, Observed = 2),
+    y = c(Treatment = 2, Age = 2, Censoring = 1.5, Outcome = 2, Observed = 0.5)
+  ),
+  labels = c(
+    Treatment = "Treatment",
+    Age = "Age\n(Measured)",
+    Censoring = "Censoring",
+    Outcome = "Outcome",
+    Observed = "Observed\n(Selection)"
+  )
+)
+
+p4 <- ggdag(selection_dag_explicit, text = FALSE, use_labels = "label") +
+  theme_dag_blank() +
+  labs(title = "Explicit Selection Process",
+       subtitle = "We can only analyze cases where Observed = 1 (not censored)") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+
+print(p4)
+```
+
+You can add options to executable code like this
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).

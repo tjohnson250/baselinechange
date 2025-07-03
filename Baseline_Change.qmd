@@ -203,7 +203,7 @@ dataMod1 %>%
 
 ```
 
-```{}
+```         
 ```
 
 In this data there is no variable for `group`, because we generated the potential outcomes for all participants under both control and treatment. We will use `group` in the next model to simulate treatment assignment for an RCT.
@@ -541,7 +541,7 @@ rct_time1_mean_diff <- filter(means, group=="Treatment")$mean - filter(means, gr
 cat("Mean difference in time1 from RCT (Treatment - Control):", round(rct_time1_mean_diff, 3), "\n")
 ```
 
-Recall that the true causal effect is `{r} additive_effect` and the estimate from this data based on potential outcomes is `{r} po_estimate`. The estimate from the RCT is lower than both. Let's use regression to estimate the difference in means for `time1` between the treatment and control groups and give us a p-value and confidence interval:
+Recall that the true causal effect is `{r} additive_effect` and the estimate from this data based on potential outcomes is `{r} po_estimate`. The estimate from the RCT is lower than both. To get a p-value and confidence interval, we can use regression to estimate the difference in means for `time1` between the treatment and control groups:
 
 ```{r}
 res_time1_group <- lm(time1 ~ group, data = dataMod2)
@@ -790,7 +790,7 @@ dataMod3$change1[dataMod3$censored == 1] <- NA
 
 ### Summary Statistics
 
-As expected, the summary statistics comparing control and treatment groups show differential loss to follow-up:
+As expected, the summary statistics comparing control and treatment groups show differential loss to follow-up, as seen in the different rates of censoring:
 
 ```{r}
 #| code-fold: true
@@ -852,6 +852,7 @@ When we ignore patients who are lost to follow-up we run the risk of creating a 
 #| label: Model3_DAG
 #| fig-cap: "Causal DAG for Model 3 where group is the treatment variable, censoring codes whether a patient is lost to follow-up, and either time1 or change1 is the outcome."
 #| code-fold: true
+#| warning: false
 
 # Create the DAG using dagify
 dagMod3 <- dagify(
@@ -908,7 +909,7 @@ df_paths %>%
 
 ```
 
-The second path from `group` to `time1` is open, meaning that association is allowed to flow along it. To get an unbiased estimate of the total effect of `group` on `time1` all forward (causal) paths from `group` to `time1` must be open and all backdoor (non-causal paths) must be closed. In this case, there is only one backdoor path: the path going through `censored`; however, as long as we don't adjust for `censored` that path is blocked because `censored` along this path is a collider. A collider blocks the flow of association along the path. However, if we analyze only patients who remained in the study (were not censored) then we are selecting only uncensored patients, which means that we are setting $censored = 1$, hence we are adjusting `censored`.
+`group -> time1` is a causal path that is open, meaning that association can flow through it. `group -> censored <- L -> time1` is a backdoor path that is closed, because association is blocked because `censored` is a collider on this path. A collider is a node with both arrows pointing toward it. Colliders block the flow of association, as long as we don't condition or adjust for the collider. However, if we analyze only patients who remained in the study (were not censored) then we are selecting only uncensored patients, which means that we are setting $censored = 1$, hence we are adjusting `censored`. This opens the flow of association along the backdoor path, biasing our effect estimates.
 
 When we adjust `censored`, we get the following graph that allows non-causal association to flow between `group` and `time1`:
 
