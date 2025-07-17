@@ -93,13 +93,14 @@ The Causal DAG for the first and simplest model looks like this:
 # Create the DAG using dagify
 dagMod1 <- dagify(
   time1 ~ baseline + group + L,
+  W ~ L + group,  # Side effect influenced by both L and treatment
   change1 ~ baseline + time1,
   exposure = "group",
   outcome = "time1",
   coords = data.frame(
-    name = c("baseline", "L", "group", "time1", "change1"),
-    x = c(0, 0, 4, 3, 1.5)*.5,
-    y = c(1, 2, 2, 1, 0)*.5
+    name = c("baseline", "L", "W", "group", "time1", "change1"),
+    x = c(0, 0, 2, 4, 3, 1.5)*.5,
+    y = c(1, 2, 2.5, 2, 1, 0)*.5
   )
 )
 
@@ -132,6 +133,8 @@ $Y_1$: `time1` or `change1` depending on which outcome we are interested in
 $X$: `group` where 0 is control and 1 is treatment
 
 `L`: A binary prognostic factor that increases `time1` by a fixed amount when $L = 1$. Depending on what we wish to demonstrate we may treat L as measured or unmeasured.
+
+W: A (binary) side-effect resulting from a combination of `L` and the treatment, `group`. W is more likely when L=1 and when treated `group = treated`. We will use `W` later to model to loss to follow-up.
 
 Now let's simulate potential outcomes for the causal DAG shown above. In this simulation, the causal effect of treatment on `time1` is 10, meaning that treated patients will see their baseline score increase by 10 plus a random amount of normally distributed noise with mean 0 and standard deviation of 3 ($\mu = 0$, $\sigma = 3$), whereas control will see only the random change. The simulation calculates the potential outcomes `time1_x0` and `time1_x1` for all participants, where `x1` is the outcome under treatment, and `x0` under control. Likewise, the simulation also calculates potential outcomes of the change score: `change1_x0`, and `change1_x1`.
 
@@ -179,6 +182,17 @@ change1_x1 <- time1_x1 - baseline
 ite_time1 <- time1_x1 - time1_x0
 ite_change1 <- change1_x1 - change1_x0
 
+# Generate potential outcomes for W (side effect) 
+# W is more likely when L=1 (unfavorable prognosis) and when treated
+# First, show the probability of W (side effect) by L and Group
+# Adjust these to create higher censoring in treatment group with L=1
+prob_W_L0_control <- 0.05     # 5% side effects for L=0 control
+prob_W_L1_control <- 0.15     # 15% side effects for L=1 control  
+prob_W_L0_treatment <- 0.20   # 20% side effects for L=0 treatment
+prob_W_L1_treatment <- 0.70   # 70% side effects for L=1 treatment (much higher!)
+W_x0 <- rbinom(n, 1, prob_W_L0_control + prob_W_L0_treatment*L)  
+W_x1 <- rbinom(n, 1, prob_W_L1_control + prob_W_L1_treatment*L)  
+
 dataMod1 <- data.frame(
   id = 1:n,
   baseline = baseline,
@@ -187,6 +201,8 @@ dataMod1 <- data.frame(
   time1_x1 = time1_x1,
   change1_x0 = change1_x0,
   change1_x1 = change1_x1,
+  W_x0 = W_x0,
+  W_x1 = W_x1,
   ite_time1 = ite_time1,
   ite_change1 = ite_change1
 )
@@ -243,22 +259,22 @@ table1 <- dataMod1 |> select(-id) |> tbl_summary()
 table1
 ```
 
-From the summary, we can see, as expected, that under treatment `time1_x1` and `change1_x1` are close to 10 points higher than control.
+From the summary, we can see, as expected, that under treatment `time1_x1` and `change1_x1` are close to 10 points higher than control (`time1_x0` and `change1_x0`).
 
 ### ATE on Follow-Up (Mean difference)
 
-Since we have the potential outcomes for all patients we can calculate the Average Treatment Effect of the treatment on `time1` (@eq-att-outcome) as the difference between the mean follow-up outcome between the treated and control groups:
+Since we have the potential outcomes for all patients we can calculate the Average Treatment Effect of the treatment on `time1` (@eq-att-outcome) as the difference between the mean follow-up outcome between *all* patients when treated vs not treated:
 
 ```{r}
 po_estimate <- mean(dataMod1$time1_x1) - mean(dataMod1$time1_x0)
 cat("Mean difference time1 (Treatment - Control):", round(po_estimate, 3), "\n")
 ```
 
-This is close to the true value of 10, but not perfect due to random noise added by the model and the relatively small sample size (150 participants).
+This is close to the true value of `r additive_effect`, but not perfect due to random noise added by the model and the relatively small sample size (`r n` participants).
 
 ### ATE on Change Scores (Mean difference)
 
-We can also compute the difference in *change scores* between the treated and untreated (@eq-changescore):
+We can also compute the difference in *change scores* between the patients when they are treated vs untreated (@eq-changescore):
 
 ```{r}
 po_change1 <- mean(dataMod1$change1_x1) - mean(dataMod1$change1_x0)
@@ -317,6 +333,7 @@ The paired t-test shows a statistically significant difference between treatment
 The t-test for the change score `change1` gives identical results:
 
 ```{r}
+#| code-fold: true
 #| results: hold
 # Perform paired t-test
 t_test_result <- t.test(dataMod1$change1_x1, dataMod1$change1_x0, paired = TRUE)
@@ -361,7 +378,7 @@ res_time1_po <- lmer(time1_outcome ~ group + (1|id),
 tbl_time1_po <- tbl_regression(res_time1_po,
                                show_single_row = group)
 
-# effect on change1: reshape data to long format (2 rows per participant) for time1
+# effect on change1: reshape data to long format (2 rows per participant) for change1
 dataMod1_Long <- dataMod1 |> 
   pivot_longer(cols = c(change1_x0, change1_x1),
                          names_to = "treatment",
@@ -391,9 +408,15 @@ Given the small sample size and random noise, the potential outcomes analysis gi
 
 We can now consider an RCT using the same data, but with randomization of treatment assignment.
 
-## Model2: RCT with Additive Treatment Effect
+## Model 2: RCT with Additive Treatment Effect
 
 This model uses the same causal DAG and potential outcomes generated for Model 1. We copy the dataset from Model 1, but now we add the `group` variable that reflects the treatment each patient was randomized to. Based on the assigned treatment, we then copy the appropriate potential outcomes to the observed `time1` and `change1`. Finally we save all of the data, then create a new data frame that includes only the variables we would see in an RCT.
+
+::: callout-note
+## Technical Note
+
+In contrast to Model 1, where we knew the outcome under treatment and control for all participants, in Model 2 we can observe only one of those outcomes based on the group a participant was assigned to. Recall that the average treatment effect is defined as the difference between the mean outcome if *all* participants were treated and the mean outcome if *all* participants were untreated. In most real-world data, including RCTs, we can only observe the outcome under one treatment condition. This is why the potential outcomes framework treats causal inference as a missing data problem. However, in RCTs we randomize treatment assignment, which means that we can often assume that (given a large enough number of participants), the participants in each treatment group are exchangeable, meaning that if we swapped which group was treated and which untreated it would not affect the outcome. As a result, we can assume that the outcomes of the two different groups are reasonable estimates of the outcome if all participants had been treated or untreated.
+:::
 
 ### Data Generation
 
@@ -406,6 +429,7 @@ group <- rep(c(0, 1), each = n/2) # 0 = control, 1 = treatment
 # Copy the potential outcome for time1 and change1 based on treatment assignment
 time1 <- ifelse(group == 0, time1_x0, time1_x1)
 change1 <- ifelse(group == 0, change1_x0, change1_x1)
+W <- ifelse(group == 0, W_x0, W_x1)  # Observed side effect based on treatment
 
 # Add the new variables to the Model 2 dataset
 # Convert group to a factor, but use levels to make sure Treatment is first so that t.test
@@ -413,10 +437,11 @@ change1 <- ifelse(group == 0, change1_x0, change1_x1)
 dataMod2$group <- factor(group, levels = c(0, 1), labels = c("Control", "Treatment"))
 dataMod2$time1 <- time1
 dataMod2$change1 <- change1
+dataMod2$W <- W
 
 # dataMod2 contains all of the potential outcomes, lets copy it to preserve it and keep only the data we would see in an RCT
 dataMod2_all <- dataMod2
-dataMod2 <- dataMod2 |> select(id, group, baseline, L, time1, change1)
+dataMod2 <- dataMod2 |> select(id, group, baseline, L, W, time1, change1)
 real_cols <- which(sapply(dataMod2, function(x) {
   is.numeric(x) && any(x %% 1 != 0, na.rm = TRUE)
 }))
@@ -458,7 +483,7 @@ We can see that both `time1` and `change1` differ significantly between the two 
 #| code-fold: true
 #| echo: false
 library(cobalt)
-unadjcov <- bal.tab(group ~ baseline + L, data = dataMod2, thresholds = c(m = .1))
+unadjcov <- bal.tab(group ~ baseline + L + W, data = dataMod2, thresholds = c(m = .1))
 love.plot(unadjcov, stars = "std", thresholds = c(m = .1))
 ```
 
@@ -531,7 +556,7 @@ ggplotly(p, tooltip = "text") %>%
   layout(title = list(text = "Time1 vs Baseline by Group<br><sub>Vertical line shows difference between groups at mean baseline</sub>"))
 ```
 
-A general rule of thumb is that the standardized mean differences between covariates should fall between $+/-0.1$. As seen above, both `L` and`baseline` fall within the threshold. If the baseline values of the treatment and control group are balanced, then an unbiased average treatment effect is just the mean of `time2` for those in the treatment group minus the mean for those in the control group. Let's calculate that here and see if the slight baseline imbalance creates a biased estimate:
+A general rule of thumb is that the standardized mean differences between covariates should fall between $+/-0.1$. As seen above, both `L` and`baseline` fall within the threshold. (Ignore `W` for now.) If the baseline values of the treatment and control group are balanced, then an unbiased average treatment effect is just the mean of `time2` for those in the treatment group minus the mean for those in the control group. Let's calculate that here and see if the slight baseline imbalance creates a biased estimate:
 
 ```{r}
 means <- dataMod2 |>
@@ -709,15 +734,15 @@ Since baseline is not a confounder and there are no other confounders in the cau
 
 ### Summary
 
-Thus far we have seen that there are several nuances to analyzing change from baseline, even with an RCT. We also saw that ANCOVA provided the best oror equally good estimate when analyzing both follow-up scores and change scores.
+Thus far we have seen that there are several nuances to analyzing change from baseline, even with an RCT. We also saw that ANCOVA provided an equally good estimate when analyzing both follow-up scores and change scores.
 
-Now we turn to an RCT with loss to follow-up
+Now we turn to an RCT with differential loss to follow-up.
 
-## Model 3: RCT, Additive Effect, Differential Loss to Follow-Up.
+## Model 3: RCT, Additive Effect, Differential Loss to Follow-Up (L Measured)
 
 To be finished.
 
-Model 3 uses the RCT data, but simulates differential loss to follow-up, meaning that patients drop out of the study before the outcome `time1` can be measured. When a patient is lost to follow-up we say that that patient has been censored. In this simulation, patients are censored based on the presence of the prognostic factor `L` and which treatment group they are in, according to the following probabilities.
+Model 3 uses the RCT data, but simulates differential loss to follow-up, meaning that patients drop out of the study before the outcome `time1` can be measured. When a patient is lost to follow-up we say that that patient has been censored. In this simulation, patients are censored based on the presence of the side-effect `W` which is affected by their treatment `group` and the prognostic factor `L` according to the following probabilities. In this Model we assume that L is measured for all participants.
 
 ```{r}
 #| code-fold: true
@@ -766,6 +791,129 @@ gt_table <- table_data %>%
 gt_table
 ```
 
+```{r}
+#| code-fold: true
+# First, show the probability of W (side effect) by L and Group
+
+table_W <- data.frame(
+  L = c("0", "1"),
+  Control = c(paste0(prob_W_L0_control * 100, "%"), 
+              paste0(prob_W_L1_control * 100, "%")),
+  Treatment = c(paste0(prob_W_L0_treatment * 100, "%"), 
+                paste0(prob_W_L1_treatment * 100, "%"))
+)
+
+# Create the gt table for W probabilities
+gt_table_W <- table_W %>%
+  gt() %>%
+  tab_header(
+    title = "Probability of Side Effect (W) by L and Treatment Group"
+  ) %>%
+  cols_label(
+    L = "L",
+    Control = "Control",
+    Treatment = "Treatment"
+  ) %>%
+  tab_spanner(
+    label = "Group",
+    columns = c(Control, Treatment)
+  ) %>%
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels()
+  ) %>%
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_title()
+  ) %>%
+  opt_align_table_header(align = "center")
+
+# Display the W probability table
+gt_table_W
+
+# Now show the probability of censoring given W
+# From the data generation:
+# prob_ltfu_W0 <- 0.02  # Low probability of LTFU when no side effect
+# prob_ltfu_W1 <- 0.50  # High probability of LTFU when side effect present
+
+prob_ltfu_W0 <- 0.02
+prob_ltfu_W1 <- 0.80
+
+table_censoring <- data.frame(
+  W = c("0 (No side effect)", "1 (Side effect present)"),
+  Probability_of_LTFU = c(paste0(prob_ltfu_W0 * 100, "%"), 
+                           paste0(prob_ltfu_W1 * 100, "%"))
+)
+
+# Create the gt table for censoring probabilities
+gt_table_censoring <- table_censoring %>%
+  gt() %>%
+  tab_header(
+    title = "Probability of Loss to Follow-up by Side Effect Status"
+  ) %>%
+  cols_label(
+    W = "W",
+    Probability_of_LTFU = "Probability of LTFU"
+  ) %>%
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels()
+  ) %>%
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_title()
+  ) %>%
+  opt_align_table_header(align = "center")
+
+# Display the censoring probability table
+gt_table_censoring
+
+# Calculate and show the overall LTFU probabilities by L and Group
+# P(LTFU | L, Group) = P(LTFU | W=1) * P(W=1 | L, Group) + P(LTFU | W=0) * P(W=0 | L, Group)
+
+prob_ltfu_L0_control <- prob_ltfu_W1 * prob_W_L0_control + prob_ltfu_W0 * (1 - prob_W_L0_control)
+prob_ltfu_L1_control <- prob_ltfu_W1 * prob_W_L1_control + prob_ltfu_W0 * (1 - prob_W_L1_control)
+prob_ltfu_L0_treatment <- prob_ltfu_W1 * prob_W_L0_treatment + prob_ltfu_W0 * (1 - prob_W_L0_treatment)
+prob_ltfu_L1_treatment <- prob_ltfu_W1 * prob_W_L1_treatment + prob_ltfu_W0 * (1 - prob_W_L1_treatment)
+
+table_overall <- data.frame(
+  L = c("0", "1"),
+  Control = c(paste0(round(prob_ltfu_L0_control * 100, 1), "%"), 
+              paste0(round(prob_ltfu_L1_control * 100, 1), "%")),
+  Treatment = c(paste0(round(prob_ltfu_L0_treatment * 100, 1), "%"), 
+                paste0(round(prob_ltfu_L1_treatment * 100, 1), "%"))
+)
+
+# Create the gt table for overall LTFU probabilities
+gt_table_overall <- table_overall %>%
+  gt() %>%
+  tab_header(
+    title = "Overall Probability of Loss to Follow-up by L and Treatment Group",
+    subtitle = "Calculated as: P(LTFU|L,Group) = P(LTFU|W=1)×P(W=1|L,Group) + P(LTFU|W=0)×P(W=0|L,Group)"
+  ) %>%
+  cols_label(
+    L = "L",
+    Control = "Control",
+    Treatment = "Treatment"
+  ) %>%
+  tab_spanner(
+    label = "Group",
+    columns = c(Control, Treatment)
+  ) %>%
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels()
+  ) %>%
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_title()
+  ) %>%
+  opt_align_table_header(align = "center")
+
+# Display the overall table
+gt_table_overall
+```
+
 Patients with `L` see an increase by `{r} baseline_outcome_effect` in `time1`, but are much more likely to drop out of the study if they are also in the treatment group. This will tend to decrease the difference in `time1` between the treatment and control groups, hence resulting in underestimating the treatment effect.
 
 Let's generate the censored dataset:
@@ -774,11 +922,8 @@ Let's generate the censored dataset:
 # Copy dataMod2
 dataMod3 <- dataMod2
 
-# Simulate differential loss to follow-up (LTFU) based on L and Treatment
-dataMod3$ltfu_prob <- ifelse(dataMod3$L == 1 & dataMod3$group == "Treatment", prob_ltfu_unfavorable_treatment,
-                          ifelse(dataMod3$L == 1 & dataMod3$group == "Control", prob_ltfu_unfavorable_control,
-                                 prob_ltfu_favorable))
-
+# Simulate differential loss to follow-up (LTFU) based on W only
+dataMod3$ltfu_prob <- ifelse(dataMod3$W == 1, prob_ltfu_W1, prob_ltfu_W0)
 
 # Generate censoring indicator (1 = censored/dropped out, 0 = observed)
 dataMod3$censored <- rbinom(n, 1, dataMod3$ltfu_prob)
@@ -803,7 +948,35 @@ table2_Mod3 <- dataMod3 |>
 table2_Mod3
 ```
 
-Censored patients have missing outcomes, which means that we must drop them from the dataset prior to applying any of the methods we used above. Let's look at how that affects our effect estimates on `time1` and `change1` using ANCOVA:
+Censored patients have missing outcomes, which means that we must drop them from the dataset prior to applying any of the methods we used above.
+
+Dropping these patients from the dataset changes the population and the distribution of the variables in our data:
+
+```{r}
+# Create the new dataset retaining only uncensored participants
+dataMod3_Censored <- dataMod3 |>
+  filter(censored == 0) |>
+  select(-censored)
+  
+table2_Mod3_Censored <- dataMod3_Censored|>
+  select(-id) |>
+  mutate(group = as.factor(group)) |>
+  tbl_summary(by = group) |>
+  add_p() |>
+  bold_labels()
+table2_Mod3_Censored
+```
+
+In the uncensored participants L, the prognostic factor that causes better outcomes, is now unbalanced. Participants who in the treated group have a much lower incidence of `L`. We can see this in a covariate balance plot:
+
+```{r}
+#| code-fold: true
+#| echo: false
+censcov <- bal.tab(group ~ baseline + L + W, data = dataMod3_Censored, thresholds = c(m = .1))
+love.plot(censcov, stars = "std", thresholds = c(m = .1))
+```
+
+Let's look at how that affects our effect estimates on `time1` and `change1` using ANCOVA:
 
 ```{r}
 #| code-fold: true
@@ -830,11 +1003,8 @@ tbl_stack(
 ) |>
   modify_caption("**Treatment Effects Across Different Models and Estimators**") |>
   modify_footnote(
-    label ~ "PO = Potential Outcomes; RCT = Randomized Controlled Trial"
-  ) %>%
-  modify_footnote(
-    estimate ~ "LTFU = Loss To Follow-Up"
-  ) |>
+    label ~ "PO = Potential Outcomes; RCT = Randomized Controlled Trial; LTFU (Lost to Follow-up)"
+  )  |>
   modify_table_styling(
     columns = everything(),
     rows = label == c("time1 (RCT LTFU ANCOVA)", "change1 (RCT LTFU ANCOVA)"),
@@ -846,7 +1016,7 @@ The naive analysis of the data, that completely drops censored patients, underes
 
 ### Adjusting for Loss To Follow-up
 
-When we ignore patients who are lost to follow-up we run the risk of creating a selection bias. To see this, let's look at the causal DAG for Model 3 including the censoring indicator:
+When we ignore patients who are lost to follow-up we create a selection bias. To see this, let's look at the causal DAG for Model 3 including the censoring indicator:
 
 ```{r, fig.width = 12, fig.height = 8}
 #| label: Model3_DAG
@@ -857,14 +1027,15 @@ When we ignore patients who are lost to follow-up we run the risk of creating a 
 # Create the DAG using dagify
 dagMod3 <- dagify(
   time1 ~ baseline + group + L,
-  censored ~ L + group,
+  W ~ L + group,  # Side effect influenced by both L and treatment
+  censored ~ W,   # Censoring depends only on W (side effect)
   change1 ~ baseline + time1,
   exposure = "group",
   outcome = "time1",
   coords = data.frame(
-    name = c("baseline", "L", "censored", "group", "time1", "change1"),
-    x = c(0, 0, 3, 4, 3, 1.5)*.5,
-    y = c(1, 2, 2, 2, 1, 0)*.5
+  name = c("baseline", "L", "W", "censored", "group", "time1", "change1"),
+    x = c(0, 0, 2, 2, 4, 3, 1.5)*.5,
+    y = c(1, 2, 2.5, 2, 2, 1, 0)*.5
   )
 )
 
@@ -881,7 +1052,7 @@ ggdag_status(dagMod3, var = "censored",
 
 To estimate the causal effect of `group` on `time1` we need to block any open backdoor paths between `group` and `time1` while keeping forward, causal, paths open. A backdoor path is an acyclic path from the treatment variable to the outcome variable where at least one arrow points back toward the treatment. There are two paths between `group` and `time`:
 
-```{r}
+```{r, fig.width = 12, fig.height = 8}
 #| code-fold: true
 paths <- paths(dagMod3)
 df_paths <- data.frame(path = paths$paths,
@@ -904,28 +1075,47 @@ df_paths %>%
     columns = path
   )
 
-# To show open paths graphically with censoring use this:
-# dag_paths(dagMod3, shadow=TRUE, adjust_for = "censored") + theme_dag()
-
 ```
 
-`group -> time1` is a causal path that is open, meaning that association can flow through it. `group -> censored <- L -> time1` is a backdoor path that is closed, because association is blocked because `censored` is a collider on this path. A collider is a node with both arrows pointing toward it. Colliders block the flow of association, as long as we don't condition or adjust for the collider. However, if we analyze only patients who remained in the study (were not censored) then we are selecting only uncensored patients, which means that we are setting $censored = 1$, hence we are adjusting `censored`. This opens the flow of association along the backdoor path, biasing our effect estimates.
+`group -> time1` is a causal path that is open, meaning that association can flow through it. `group -> W <- L -> time1` is a backdoor path that is closed, because association is blocked since `W` is a collider on this path. A collider is a node on a path with both arrows pointing toward it. Colliders block the flow of association, as long as we don't condition or adjust for the collider *or a child node of the collider*.
 
-When we adjust `censored`, we get the following graph that allows non-causal association to flow between `group` and `time1`:
+It can help to visualize only the open paths between the treatment and the outcome:
 
 ```{r, fig.width = 12, fig.height = 8}
-ggdag_adjust(dagMod3, var = "censored",
-             text = TRUE, node_size = 25, text_size = 2.5) +
-  guides(shape = "none") + 
-  theme_dag() +
-  theme(plot.margin = margin(20, 20, 20, 20)) 
+ggdag_paths(dagMod3, from = "group", to = "time1", shadow=TRUE) + theme_dag()
 ```
 
-The `censored` variable is shown with a square around it to indicate that by analyzing only uncensored patients, `censored` is adjusted for in the analysis. Since all arrows point into `censored`, any path from treatment `group` to effect `time2` that includes `censored` will transmit spurious association through `censored` unless the path is blocked at another point.
+The problem with censoring is that if we analyze only patients who remained in the study (were not censored) then we are selecting only uncensored patients, which means that we are setting $censored = 1$, hence we are adjusting `censored`. Since `censored` is a child of `W`, this opens the flow of association across `W`. This non-causal association can introduce bias into our effect estimates. Again, it is helpful to view the open paths in the context of the DAG when we adjust for both `L` and `censored`:
 
-The naive analysis answers the causal question: What is the effect of treatment on the outcome among patients who were not lost to follow-up. Instead, we want to know the causal effect of the treatment on the outcome *had no one been lost to follow-up*.
+```{r, fig.width = 12, fig.height = 8}
+#| code-fold: true
+# ggdag_adjust(dagMod3, var = "censored",
+#              text = TRUE, node_size = 25, text_size = 2.5) +
+#   guides(shape = "none") + 
+#   theme_dag() +
+#   theme(plot.margin = margin(20, 20, 20, 20)) 
 
-According to Pearl's causal inference framework [@pearl2010], adjusting for `L` will block the non-causal path. One way to do this is by adding `L` as a covariate to the regression:
+ggdag_paths(dagMod3, from = "group", to = "time1", shadow=TRUE, adjust_for = c("censored")) +
+    aes(shape = ifelse(name %in% c("censored"), "square", "circle")) +
+  scale_shape_manual(values = c(circle = 16, square = 15), guide = "none") +
+  theme_dag() +
+  theme(legend.position = "right")
+```
+
+The naive analysis that completely ignores censored participants answers the causal question: What is the effect of treatment on the outcome among patients who were not lost to follow-up in the presence of bias due to censoring. How do we get an unbiased effect? According to Pearl's causal inference framework [@pearl2010], adjusting for `L` will block the non-causal path opened by censoring. After adjustment for L, we see that the backdoor path is closed:
+
+```{r, fig.width = 12, fig.height = 8}
+ggdag_paths(dagMod3, from = "group", to = "time1",
+            shadow=TRUE,
+            adjust_for = c("censored", "L")) +
+  aes(shape = ifelse(name %in% c("L", "censored"), "square", "circle")) +
+  scale_shape_manual(values = c(circle = 16, square = 15), guide = "none") +
+  theme_dag() +
+  theme(legend.position = "right")
+
+```
+
+To adjust for `L` we can add `L` as a covariate to the regression:
 
 ```{r}
 
@@ -939,9 +1129,112 @@ tbl_change1_ANCOVA_LTFU_Adj <-
                  include = "group")
 ```
 
-To avoid selection bias we need to block the association that flows through the non-causal path.
+Adding to our results we get:
+
+```{r}
+#| code-fold: true
+tbl_stack(
+  list(
+    tbl_time1_po |> modify_table_body(~.x %>% mutate(label = "time1 (PO)")),
+    tbl_change1_po |> modify_table_body(~.x %>% mutate(label = "change1 (PO)")),
+    tbl_time1_group |> modify_table_body(~.x %>% mutate(label = "time1 (RCT)")),
+    tbl_change1_group |> modify_table_body(~.x %>% mutate(label = "change1 (RCT)")),
+    tbl_time1_ANCOVA |> modify_table_body(~.x %>% mutate(label = "time1 (RCT ANCOVA)")),
+        tbl_change1_ANCOVA |> modify_table_body(~.x %>% mutate(label = "change1 (RCT ANCOVA)")),
+            tbl_time1_ANCOVA_LTFU_Naive |> modify_table_body(~.x %>% mutate(label = "time1 (RCT LTFU ANCOVA)")),
+    tbl_change1_ANCOVA_LTFU_Naive |> modify_table_body(~.x %>% mutate(label = "change1 (RCT LTFU ANCOVA)")),
+     tbl_time1_ANCOVA_LTFU_Adj |> modify_table_body(~.x %>% mutate(label = "time1 (RCT LTFU L Adjusted)")),
+         tbl_change1_ANCOVA_LTFU_Adj |> modify_table_body(~.x %>% mutate(label = "change1 (RCT LTFU L Adjusted)"))
+  ) 
+) |>
+  modify_caption("**Treatment Effects Across Different Models and Estimators**") |>
+  modify_footnote(
+    label ~ "PO = Potential Outcomes; RCT = Randomized Controlled Trial; LTFU (Lost to Follow-up)"
+  ) %>%
+  modify_footnote(
+    estimate ~ "CI = Confidence Interval"
+  ) |>
+  modify_table_styling(
+    columns = everything(),
+    rows = label == c("time1 (RCT LTFU L Adjusted)", "change1 (RCT LTFU L Adjusted)"),
+    text_format = "bold"
+  )
+```
+
+Adjusting for L has given us an unbiased estimate of the effect of the treatment on the outcome. One subtle point that we will return to below is that adjusting for L allows us to estimate the effect of the treatment on the outcome, *had no one been lost to follow-up*. We can think of this as estimating the effect of a joint intervention on treatment and censoring, where we intervene to avoid censoring. If $Y_1$ is the outcome, $X$ is the treatment indicator and $C=0$ means a participant was not censored, then this estimand is
+
+$$
+E[Y_1^{(X=1, C=0)} - Y_1^{(X=0, C=0)}]
+$$
+
+or in terms of the variables in our causal DAG:
+
+$$
+E[time1^{group=\text{Treatment}, censored = 0)} - time1^{(group=\text{Control}, censored = 0)}]
+$$
+
+In this example, we assumed that `L` was measured; however, covariates that affect censoring are often unmeasured and may even be unknown. In such cases, we can turn to other approaches, such Inverse Probability of Censoring Weighting (IPCW), which we describe next.
+
+### Adjusting for Loss to Follow-up using IPCW
+
+IPCW (Inverse Probability of Censoring Weighting) creates a pseudopopulation from our original population by weighting each participant's outcome by the inverse probability of remaining uncensored. Censored patients have a weight of 0. In the most basic form of IPCW, the weighted means of the treated and control groups estimate the potential outcomes of the entire population.
+
+To create the weights, we use logistic regression to fit a censoring model using all covariates that directly affect censoring. For our model, we need only predict remaining uncensored based on the covariate `W` since, as you can see from the causal DAG above, W is the only parent of `censored`.
+
+```{r}
+# Step 1: Create uncensored indicator (opposite of censored)
+dataMod3$uncensored <- 1 - dataMod3$censored
+
+# Step 2: Fit logistic regression model to predict probability of NOT being censored
+# Based on the DAG: censored ~ W, so we model uncensored ~ W
+censoring_model <- glm(uncensored ~ group  + L + W, data = dataMod3, family = binomial)
+
+summary(censoring_model)
+```
+
+Next we use the censoring model to predict the probability of being uncensored for each participant in the dataset.
+
+```{r}
+# Step 3: Calculate predicted probabilities of being uncensored
+dataMod3$prob_uncensored <- predict(censoring_model, type = "response")
+```
+
+Next we calculate the IPCW weights as the inverse of the probability of remaining uncensored for all uncensored participants and as 0 for censored particpants:
+
+```{r}
+# Step 4: Calculate IPCW weights (only for uncensored observations)
+dataMod3$ipcw_weight <- ifelse(dataMod3$uncensored == 1, 1/dataMod3$prob_uncensored, 0)
+```
+
+Finally, we calculated the weighted mean in the treated and control groups and find the difference to estimate the effect:
+
+```{r}
+# Step 5: Calculate weighted means for treated and control groups (uncensored only)
+uncensored_data <- dataMod3[dataMod3$uncensored == 1, ]
+
+# Weighted mean for treated group (group = 1)
+treated_mean <- weighted.mean(uncensored_data$time1[uncensored_data$group == "Treatment"],
+                              uncensored_data$ipcw_weight[uncensored_data$group == "Treatment"])
+
+# Weighted mean for control group (group = 0)
+control_mean <- weighted.mean(uncensored_data$time1[uncensored_data$group == "Control"], 
+                             uncensored_data$ipcw_weight[uncensored_data$group == "Control"])
+
+# Step 6: Calculate treatment effect estimate
+treatment_effect <- treated_mean - control_mean
+
+cat("IPCW Treatment Effect Estimate:\n")
+cat("Treated group mean:", round(treated_mean, 3), "\n")
+cat("Control group mean:", round(control_mean, 3), "\n")
+cat("Treatment effect (difference):", round(treatment_effect, 3), "\n")
+
+# Optional: Check weight distribution
+cat("\nWeight summary:\n")
+print(summary(uncensored_data$ipcw_weight))
+```
 
 ```         
+
 ```
 
 ```{r, eval = FALSE}
