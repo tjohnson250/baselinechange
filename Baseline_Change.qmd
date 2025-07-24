@@ -1173,13 +1173,25 @@ $$
 E[time1^{group=\text{Treatment}, censored = 0)} - time1^{(group=\text{Control}, censored = 0)}]
 $$
 
+In the presence of censoring, it is important to explicitly state the causal estimand as a joint intervention to be clear about the effect we are interested in.
+
 In this example, we assumed that `L` was measured; however, covariates that affect censoring are often unmeasured and may even be unknown. In such cases, we can turn to other approaches, such Inverse Probability of Censoring Weighting (IPCW), which we describe next.
 
 ### Adjusting for Loss to Follow-up using IPCW
 
 IPCW (Inverse Probability of Censoring Weighting) creates a pseudopopulation from our original population by weighting each participant's outcome by the inverse probability of remaining uncensored. Censored patients have a weight of 0. In the most basic form of IPCW, the weighted means of the treated and control groups estimate the potential outcomes of the entire population.
 
-To create the weights, we use logistic regression to fit a censoring model using all covariates that directly affect censoring. For our model, we need only predict remaining uncensored based on the covariate `W` since, as you can see from the causal DAG above, W is the only parent of `censored`.
+To create the weights, we use logistic regression to fit a model that predicts the probability of remaining uncensored conditional on the treatment and any covariates required to block all back door paths from censoring to the outcome. Here, we will look at `change1` for the outcome, because it adjusts for the baseline value. For our model, there are two such paths:
+
+```{r, fig.width = 12, fig.height = 8}
+#| code-fold: true
+
+ggdag_paths(dagMod3, from = "censored", to = "change1", shadow=TRUE) +
+    aes(shape = ifelse(name %in% c("censored"), "square", "circle")) +
+  scale_shape_manual(values = c(circle = 16, square = 15), guide = "none") +
+  theme_dag() +
+  theme(legend.position = "right")
+```
 
 ```{r}
 # Step 1: Create uncensored indicator (opposite of censored)
@@ -1187,7 +1199,7 @@ dataMod3$uncensored <- 1 - dataMod3$censored
 
 # Step 2: Fit logistic regression model to predict probability of NOT being censored
 # Based on the DAG: censored ~ W, so we model uncensored ~ W
-censoring_model <- glm(uncensored ~ group  + L + W, data = dataMod3, family = binomial)
+censoring_model <- glm(uncensored ~ group + W, data = dataMod3, family = binomial(link="logit"))
 
 summary(censoring_model)
 ```
@@ -1196,7 +1208,7 @@ Next we use the censoring model to predict the probability of being uncensored f
 
 ```{r}
 # Step 3: Calculate predicted probabilities of being uncensored
-dataMod3$prob_uncensored <- predict(censoring_model, type = "response")
+dataMod3$prob_uncensored <- predict(censoring_model, dataMod3, type = "response")
 ```
 
 Next we calculate the IPCW weights as the inverse of the probability of remaining uncensored for all uncensored participants and as 0 for censored particpants:
@@ -1213,12 +1225,12 @@ Finally, we calculated the weighted mean in the treated and control groups and f
 uncensored_data <- dataMod3[dataMod3$uncensored == 1, ]
 
 # Weighted mean for treated group (group = 1)
-treated_mean <- weighted.mean(uncensored_data$time1[uncensored_data$group == "Treatment"],
-                              uncensored_data$ipcw_weight[uncensored_data$group == "Treatment"])
+treated_mean <- weighted.mean(uncensored_data$change1[uncensored_data$group == "Treatment"],
+                              uncensored_data$ipcw_weight[uncensored_data$group == "Treatment"], na.rm = TRUE)
 
 # Weighted mean for control group (group = 0)
-control_mean <- weighted.mean(uncensored_data$time1[uncensored_data$group == "Control"], 
-                             uncensored_data$ipcw_weight[uncensored_data$group == "Control"])
+control_mean <- weighted.mean(uncensored_data$change1[uncensored_data$group == "Control"], 
+                             uncensored_data$ipcw_weight[uncensored_data$group == "Control"], na.rm = TRUE)
 
 # Step 6: Calculate treatment effect estimate
 treatment_effect <- treated_mean - control_mean
@@ -1233,8 +1245,16 @@ cat("\nWeight summary:\n")
 print(summary(uncensored_data$ipcw_weight))
 ```
 
-```         
+See [@howe2011a] for a detailed explanation of limitations on IPCW.
 
+```{r}
+#| code-fold: true
+#| echo: false
+censcov <- bal.tab(group ~ baseline + L + W, data = uncensored_data, weights = uncensored_data$ipcw_weights, thresholds = c(m = .1))
+love.plot(censcov, stars = "std", thresholds = c(m = .1))
+```
+
+```         
 ```
 
 ```{r, eval = FALSE}
