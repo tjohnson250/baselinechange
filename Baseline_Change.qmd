@@ -230,7 +230,7 @@ $$
 time1 = baseline + 5L
 $$
 
-and under treatment `time` is given by the equation
+and under treatment `time1` is given by the equation
 
 $$
 time1 = baseline + 5L + 10
