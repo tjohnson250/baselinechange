@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.5.57">
+<meta name="generator" content="quarto-1.6.42">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -84,10 +84,10 @@ div.csl-indent {
 <script src="Baseline_Change_files/libs/quarto-html/tippy.umd.min.js"></script>
 <script src="Baseline_Change_files/libs/quarto-html/anchor.min.js"></script>
 <link href="Baseline_Change_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="Baseline_Change_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="Baseline_Change_files/libs/quarto-html/quarto-syntax-highlighting-de84f8d6bb715db06a919283c2d1e787.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="Baseline_Change_files/libs/bootstrap/bootstrap.min.js"></script>
 <link href="Baseline_Change_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="Baseline_Change_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<link href="Baseline_Change_files/libs/bootstrap/bootstrap-392fc53972752023497b692015611c91.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script src="Baseline_Change_files/libs/kePrint-0.0.1/kePrint.js"></script>
 <link href="Baseline_Change_files/libs/lightable-0.0.1/lightable.css" rel="stylesheet">
 <link href="Baseline_Change_files/libs/htmltools-fill-0.5.8.1/fill.css" rel="stylesheet">
@@ -558,15 +558,15 @@ Estimands vs Estimators
 </div>
 <pre><code></code></pre>
 <p>In this data there is no variable for <code>group</code>, because we generated the potential outcomes for all participants under both control and treatment. We will use <code>group</code> in the next model to simulate treatment assignment for an RCT.</p>
-<p>The two equations for determining <code>time1</code> under control and treatment are:</p>
+<p>Under control <code>time1</code> is given by the equation</p>
 <p><span class="math display">\[
 time1 = baseline + 5L
 \]</span></p>
-<p>and</p>
+<p>and under treatment <code>time</code> is given by the equation</p>
 <p><span class="math display">\[
 time1 = baseline + 5L + 10
 \]</span></p>
-<p>The average treatment effect is <code>the difference between these two equations:</code></p>
+<p>The average treatment effect (ATE) is <code>the difference between these two equations:</code></p>
 <p><span class="math display">\[
 ATE = baseline + 5L + 10 - (baseline + 5L)
 \]</span></p>
@@ -1038,7 +1038,7 @@ ATE = 10
 
 <table class="gt_table caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
 <thead>
-<tr class="header gt_col_headings">
+<tr class="gt_col_headings header">
 <th id="label" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col"><strong>Characteristic</strong></th>
 <th id="stat_0" class="gt_col_heading gt_columns_bottom_border gt_center" data-quarto-table-cell-role="th" scope="col"><strong>N = 300</strong><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;line-height:0;"><sup>1</sup></span></th>
 </tr>
@@ -1735,7 +1735,7 @@ Technical Note
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>In contrast to Model 1, where we knew the outcome under treatment and control for all participants, in Model 2 we can observe only one of those outcomes based on the group a participant was assigned to. Recall that the average treatment effect is defined as the difference between the mean outcome if <em>all</em> participants were treated and the mean outcome if <em>all</em> participants were untreated. In most real-world data, including RCTs, we can only observe the outcome under one treatment condition. This is why the potential outcomes framework treats causal inference as a missing data problem. However, in RCTs we randomize treatment assignment, which means that we can often assume that (given a large enough number of participants), the participants in each treatment group are exchangeable, meaning that if we swapped which group was treated and which untreated it would not affect the outcome. As a result, we can assume that the outcomes of the two different groups are reasonable estimates of the outcome if all participants had been treated or untreated.</p>
+<p>In contrast to Model 1, where we knew the outcome under treatment and control for all participants, in Model 2 we can observe only one of those outcomes based on the treatment group a participant was assigned to. Recall that the average treatment effect is defined as the difference between the mean outcome if <em>all</em> participants were treated and the mean outcome if <em>all</em> participants were untreated. In most real-world data, including RCTs, we can only observe the outcome under one treatment condition. This is why the potential outcomes framework treats causal inference as a missing data problem. However, in RCTs we randomize treatment assignment, which means that we can often assume that (given a large enough number of participants), the participants in each treatment group are exchangeable, meaning that if we swapped which group was treated and which untreated it would not affect the outcome. As a result, we can assume that the outcomes of the two different groups are reasonable estimates of the outcome if all participants had been treated or untreated.</p>
 </div>
 </div>
 <section id="data-generation" class="level3">
@@ -2244,7 +2244,7 @@ Technical Note
 <col style="width: 50%">
 </colgroup>
 <thead>
-<tr class="header gt_col_headings">
+<tr class="gt_col_headings header">
 <th id="label" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col"><strong>Characteristic</strong></th>
 <th id="stat_0" class="gt_col_heading gt_columns_bottom_border gt_center" data-quarto-table-cell-role="th" scope="col"><strong>N = 300</strong><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;line-height:0;"><sup>1</sup></span></th>
 </tr>
@@ -2765,7 +2765,7 @@ Technical Note
 <col style="width: 25%">
 </colgroup>
 <thead>
-<tr class="header gt_col_headings">
+<tr class="gt_col_headings header">
 <th id="label" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col"><strong>Characteristic</strong></th>
 <th id="stat_1" class="gt_col_heading gt_columns_bottom_border gt_center" data-quarto-table-cell-role="th" scope="col"><strong>Control</strong><br>
 N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;line-height:0;"><sup>1</sup></span></th>
@@ -2806,10 +2806,10 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
 <td class="gt_row gt_center" headers="p.value">&lt;0.001</td>
 </tr>
 </tbody><tfoot class="gt_footnotes">
-<tr class="even">
+<tr class="odd">
 <td colspan="4" class="gt_footnote"><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;line-height:0;"><sup>1</sup></span> Median (Q1, Q3); n (%)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td colspan="4" class="gt_footnote"><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;line-height:0;"><sup>2</sup></span> Wilcoxon rank sum test; Pearson’s Chi-squared test</td>
 </tr>
 </tfoot>
@@ -3372,7 +3372,7 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
 
 <table class="gt_table caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
 <thead>
-<tr class="header gt_col_headings">
+<tr class="gt_col_headings header">
 <th id="label" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col"><strong>Characteristic</strong></th>
 <th id="estimate" class="gt_col_heading gt_columns_bottom_border gt_center" data-quarto-table-cell-role="th" scope="col"><strong>Beta</strong></th>
 <th id="conf.low" class="gt_col_heading gt_columns_bottom_border gt_center" data-quarto-table-cell-role="th" scope="col"><strong>95% CI</strong></th>
@@ -3387,7 +3387,7 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
 <td class="gt_row gt_center" headers="p.value">&lt;0.001</td>
 </tr>
 </tbody><tfoot class="gt_sourcenotes">
-<tr class="even">
+<tr class="odd">
 <td colspan="4" class="gt_sourcenote">Abbreviation: CI = Confidence Interval</td>
 </tr>
 </tfoot>
@@ -3859,7 +3859,7 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
 
 <table class="gt_table caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
 <thead>
-<tr class="header gt_col_headings">
+<tr class="gt_col_headings header">
 <th id="group" class="gt_col_heading gt_columns_bottom_border gt_center" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">group</th>
 <th id="mean" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">mean</th>
 </tr>
@@ -4873,7 +4873,7 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
 
 <table class="gt_table caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
 <thead>
-<tr class="header gt_col_headings">
+<tr class="gt_col_headings header">
 <th id="label" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col"><strong>Characteristic</strong></th>
 <th id="estimate" class="gt_col_heading gt_columns_bottom_border gt_center" data-quarto-table-cell-role="th" scope="col"><strong>Beta</strong></th>
 <th id="conf.low" class="gt_col_heading gt_columns_bottom_border gt_center" data-quarto-table-cell-role="th" scope="col"><strong>95% CI</strong></th>
@@ -4888,7 +4888,7 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
 <td class="gt_row gt_center" headers="p.value">&lt;0.001</td>
 </tr>
 </tbody><tfoot class="gt_sourcenotes">
-<tr class="even">
+<tr class="odd">
 <td colspan="4" class="gt_sourcenote">Abbreviation: CI = Confidence Interval</td>
 </tr>
 </tfoot>
@@ -5879,7 +5879,7 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
 
 <table class="gt_table caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
 <thead>
-<tr class="header gt_col_headings">
+<tr class="gt_col_headings header">
 <th id="label" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col"><strong>Characteristic</strong></th>
 <th id="estimate" class="gt_col_heading gt_columns_bottom_border gt_center" data-quarto-table-cell-role="th" scope="col"><strong>Beta</strong></th>
 <th id="conf.low" class="gt_col_heading gt_columns_bottom_border gt_center" data-quarto-table-cell-role="th" scope="col"><strong>95% CI</strong></th>
@@ -5894,7 +5894,7 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
 <td class="gt_row gt_center" headers="p.value">&lt;0.001</td>
 </tr>
 </tbody><tfoot class="gt_sourcenotes">
-<tr class="even">
+<tr class="odd">
 <td colspan="4" class="gt_sourcenote">Abbreviation: CI = Confidence Interval</td>
 </tr>
 </tfoot>
@@ -6363,7 +6363,7 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
 
 <table class="gt_table caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
 <thead>
-<tr class="header gt_col_headings">
+<tr class="gt_col_headings header">
 <th id="label" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col"><strong>Characteristic</strong></th>
 <th id="estimate" class="gt_col_heading gt_columns_bottom_border gt_center" data-quarto-table-cell-role="th" scope="col"><strong>Beta</strong></th>
 <th id="conf.low" class="gt_col_heading gt_columns_bottom_border gt_center" data-quarto-table-cell-role="th" scope="col"><strong>95% CI</strong></th>
@@ -6378,7 +6378,7 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
 <td class="gt_row gt_center" headers="p.value">&lt;0.001</td>
 </tr>
 </tbody><tfoot class="gt_sourcenotes">
-<tr class="even">
+<tr class="odd">
 <td colspan="4" class="gt_sourcenote">Abbreviation: CI = Confidence Interval</td>
 </tr>
 </tfoot>
@@ -7455,16 +7455,16 @@ Causal DAG Theory and Adjustment
 <col style="width: 33%">
 </colgroup>
 <thead>
-<tr class="header gt_heading">
+<tr class="gt_heading header">
 <th colspan="3" class="gt_heading gt_title gt_font_normal gt_bottom_border" style="font-weight: bold">Probability of Loss to Follow-up</th>
 </tr>
-<tr class="odd gt_col_headings gt_spanner_row">
+<tr class="gt_col_headings gt_spanner_row even">
 <th rowspan="2" id="L" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">L</th>
 <th colspan="2" id="Group" class="gt_center gt_columns_top_border gt_column_spanner_outer" data-quarto-table-cell-role="th" scope="colgroup"><div class="gt_column_spanner">
 Group
 </div></th>
 </tr>
-<tr class="header gt_col_headings">
+<tr class="gt_col_headings header">
 <th id="Control" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">Control</th>
 <th id="Treatment" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">Treatment</th>
 </tr>
@@ -7985,16 +7985,16 @@ Group
 <col style="width: 33%">
 </colgroup>
 <thead>
-<tr class="header gt_heading">
+<tr class="gt_heading header">
 <th colspan="3" class="gt_heading gt_title gt_font_normal gt_bottom_border" style="font-weight: bold">Probability of Side Effect (W) by L and Treatment Group</th>
 </tr>
-<tr class="odd gt_col_headings gt_spanner_row">
+<tr class="gt_col_headings gt_spanner_row even">
 <th rowspan="2" id="L" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">L</th>
 <th colspan="2" id="Group" class="gt_center gt_columns_top_border gt_column_spanner_outer" data-quarto-table-cell-role="th" scope="colgroup"><div class="gt_column_spanner">
 Group
 </div></th>
 </tr>
-<tr class="header gt_col_headings">
+<tr class="gt_col_headings header">
 <th id="Control" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">Control</th>
 <th id="Treatment" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">Treatment</th>
 </tr>
@@ -8507,10 +8507,10 @@ Group
 
 <table class="gt_table caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
 <thead>
-<tr class="header gt_heading">
+<tr class="gt_heading header">
 <th colspan="2" class="gt_heading gt_title gt_font_normal gt_bottom_border" style="font-weight: bold">Probability of Loss to Follow-up by Side Effect Status</th>
 </tr>
-<tr class="odd gt_col_headings">
+<tr class="gt_col_headings even">
 <th id="W" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">W</th>
 <th id="Probability_of_LTFU" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">Probability of LTFU</th>
 </tr>
@@ -9034,19 +9034,19 @@ Group
 <col style="width: 33%">
 </colgroup>
 <thead>
-<tr class="header gt_heading">
+<tr class="gt_heading header">
 <th colspan="3" class="gt_heading gt_title gt_font_normal" style="font-weight: bold">Overall Probability of Loss to Follow-up by L and Treatment Group</th>
 </tr>
-<tr class="odd gt_heading">
+<tr class="gt_heading even">
 <th colspan="3" class="gt_heading gt_subtitle gt_font_normal gt_bottom_border" style="font-weight: bold">Calculated as: P(LTFU|L,Group) = P(LTFU|W=1)×P(W=1|L,Group) + P(LTFU|W=0)×P(W=0|L,Group)</th>
 </tr>
-<tr class="header gt_col_headings gt_spanner_row">
+<tr class="gt_col_headings gt_spanner_row header">
 <th rowspan="2" id="L" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">L</th>
 <th colspan="2" id="Group" class="gt_center gt_columns_top_border gt_column_spanner_outer" data-quarto-table-cell-role="th" scope="colgroup"><div class="gt_column_spanner">
 Group
 </div></th>
 </tr>
-<tr class="odd gt_col_headings">
+<tr class="gt_col_headings even">
 <th id="Control" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">Control</th>
 <th id="Treatment" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">Treatment</th>
 </tr>
@@ -9557,7 +9557,7 @@ Group
 <col style="width: 25%">
 </colgroup>
 <thead>
-<tr class="header gt_col_headings">
+<tr class="gt_col_headings header">
 <th id="label" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col"><strong>Characteristic</strong></th>
 <th id="stat_1" class="gt_col_heading gt_columns_bottom_border gt_center" data-quarto-table-cell-role="th" scope="col"><strong>Control</strong><br>
 N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;line-height:0;"><sup>1</sup></span></th>
@@ -9640,10 +9640,10 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
 <td class="gt_row gt_center" headers="p.value">&lt;0.001</td>
 </tr>
 </tbody><tfoot class="gt_footnotes">
-<tr class="even">
+<tr class="odd">
 <td colspan="4" class="gt_footnote"><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;line-height:0;"><sup>1</sup></span> Median (Q1, Q3); n (%)</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td colspan="4" class="gt_footnote"><span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;line-height:0;"><sup>2</sup></span> Wilcoxon rank sum test; Pearson’s Chi-squared test</td>
 </tr>
 </tfoot>
@@ -10127,7 +10127,7 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
 <col style="width: 25%">
 </colgroup>
 <thead>
-<tr class="header gt_col_headings">
+<tr class="gt_col_headings header">
 <th id="label" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col"><strong>Characteristic</strong></th>
 <th id="stat_1" class="gt_col_heading gt_columns_bottom_border gt_center" data-quarto-table-cell-role="th" scope="col"><strong>Control</strong><br>
 N = 136<span class="gt_footnote_marks" style="white-space:nowrap;font-style:italic;font-weight:normal;line-height:0;"><sup>1</sup></span></th>
@@ -11278,10 +11278,10 @@ N = 94<span class="gt_footnote_marks" style="white-space:nowrap;font-style:itali
 
 <table class="gt_table caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
 <thead>
-<tr class="header gt_heading">
+<tr class="gt_heading header">
 <th colspan="2" class="gt_heading gt_title gt_font_normal gt_bottom_border">Causal Paths Analysis</th>
 </tr>
-<tr class="odd gt_col_headings">
+<tr class="gt_col_headings even">
 <th id="path" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col">Path</th>
 <th id="open" class="gt_col_heading gt_columns_bottom_border gt_center" data-quarto-table-cell-role="th" scope="col">Open</th>
 </tr>
@@ -13378,8 +13378,6 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
   });
   clipboard.on('success', onCopySuccess);
   if (window.document.getElementById('quarto-embedded-source-code-modal')) {
-    // For code content inside modals, clipBoardJS needs to be initialized with a container option
-    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
     const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
       text: getTextToCopy,
       container: window.document.getElementById('quarto-embedded-source-code-modal')
@@ -13490,7 +13488,6 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       if (window.Quarto?.typesetMath) {
         window.Quarto.typesetMath(note);
       }
-      // TODO in 1.5, we should make sure this works without a callout special case
       if (note.classList.contains("callout")) {
         return note.outerHTML;
       } else {
