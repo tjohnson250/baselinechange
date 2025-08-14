@@ -1724,7 +1724,7 @@ P-value: 0 </code></pre>
 </section>
 <section id="model-2-rct-with-additive-treatment-effect" class="level2">
 <h2 class="anchored" data-anchor-id="model-2-rct-with-additive-treatment-effect">Model 2: RCT with Additive Treatment Effect</h2>
-<p>This model uses the same causal DAG and potential outcomes generated for Model 1. We copy the dataset from Model 1, but now we add the <code>group</code> variable that reflects the treatment each patient was randomized to. Based on the assigned treatment, we then copy the appropriate potential outcomes to the observed <code>time1</code> and <code>change1</code>. Finally we save all of the data, then create a new data frame that includes only the variables we would see in an RCT.</p>
+<p>This model uses the same causal DAG and potential outcomes generated for Model 1. We copy the dataset from Model 1, then add a <code>group</code> variable randomly assigns each patient to eithe the control or treatment group. Based on the assigned treatment, we then copy the appropriate potential outcomes to the observed <code>time1</code> and <code>change1</code>. Finally we save all of the data, then create a new data frame that includes only the variables we would see in an RCT.</p>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -2819,7 +2819,7 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
 </div>
 </div>
 </div>
-<p>We can see that both <code>time1</code> and <code>change1</code> differ significantly between the two groups. Note that even in this RCT, the baseline values between control and treatment groups are slightly different, though the difference is not significant. We can explore this more using a covariate balance plot:</p>
+<p>We can see that both <code>time1</code> and <code>change1</code> differ significantly between the two groups. Even though patients were randomized to the treatment and control groups, the baseline values between control and treatment groups are slightly different, though the difference is not significant. We can explore this more using a covariate balance plot:</p>
 <div class="cell">
 <div class="cell-output cell-output-stderr">
 <pre><code> cobalt (Version 4.6.0, Build Date: 2025-04-15)</code></pre>

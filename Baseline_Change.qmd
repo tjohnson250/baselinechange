@@ -410,7 +410,7 @@ We can now consider an RCT using the same data, but with randomization of treatm
 
 ## Model 2: RCT with Additive Treatment Effect
 
-This model uses the same causal DAG and potential outcomes generated for Model 1. We copy the dataset from Model 1, but now we add the `group` variable that reflects the treatment each patient was randomized to. Based on the assigned treatment, we then copy the appropriate potential outcomes to the observed `time1` and `change1`. Finally we save all of the data, then create a new data frame that includes only the variables we would see in an RCT.
+This model uses the same causal DAG and potential outcomes generated for Model 1. We copy the dataset from Model 1, then add a `group` variable randomly assigns each patient to eithe the control or treatment group. Based on the assigned treatment, we then copy the appropriate potential outcomes to the observed `time1` and `change1`. Finally we save all of the data, then create a new data frame that includes only the variables we would see in an RCT.
 
 ::: callout-note
 ## Technical Note
@@ -477,7 +477,7 @@ table2_Mod2 <- dataMod2 |>
 table2_Mod2
 ```
 
-We can see that both `time1` and `change1` differ significantly between the two groups. Note that even in this RCT, the baseline values between control and treatment groups are slightly different, though the difference is not significant. We can explore this more using a covariate balance plot:
+We can see that both `time1` and `change1` differ significantly between the two groups. Even though patients were randomized to the treatment and control groups, the baseline values between control and treatment groups are slightly different, though the difference is not significant. We can explore this more using a covariate balance plot:
 
 ```{r}
 #| code-fold: true
