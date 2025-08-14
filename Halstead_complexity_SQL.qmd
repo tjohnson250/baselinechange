@@ -1,0 +1,676 @@
+---
+title: "Halstead Complexity SQL"
+format: html
+editor: visual
+---
+
+## Quarto
+
+Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+
+## Running Code
+
+When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{r}
+library(stringr)
+
+#' Compute Halstead Complexity Measures for MS SQL Queries
+#'
+#' This function takes an MS SQL query as a string and computes various 
+#' Halstead complexity measures including vocabulary, length, volume, 
+#' difficulty, and effort.
+#'
+#' @param sql_query A character string containing the SQL query
+#' @return A data frame with one row containing Halstead complexity measures
+#' @examples
+#' query <- "SELECT name, age FROM users WHERE age > 25 ORDER BY name"
+#' halstead_complexity_sql(query)
+halstead_complexity_sql <- function(sql_query) {
+  
+  # Define SQL operators (keywords, symbols, functions)
+  sql_operators <- c(
+    # SQL Keywords
+    "SELECT", "FROM", "WHERE", "ORDER", "BY", "GROUP", "HAVING", 
+    "INSERT", "INTO", "VALUES", "UPDATE", "SET", "DELETE", "CREATE",
+    "TABLE", "DROP", "ALTER", "INDEX", "VIEW", "PROCEDURE", "FUNCTION",
+    "TRIGGER", "DATABASE", "SCHEMA", "CONSTRAINT", "PRIMARY", "KEY",
+    "FOREIGN", "REFERENCES", "UNIQUE", "NOT", "NULL", "DEFAULT",
+    "CHECK", "AUTO_INCREMENT", "IDENTITY", "CLUSTERED", "NONCLUSTERED",
+    
+    # Joins
+    "JOIN", "INNER", "LEFT", "RIGHT", "FULL", "OUTER", "CROSS", "ON",
+    
+    # Logical operators
+    "AND", "OR", "IN", "EXISTS", "BETWEEN", "LIKE", "IS",
+    
+    # Comparison operators
+    "=", "!=", "<>", "<", ">", "<=", ">=",
+    
+    # Arithmetic operators
+    "+", "-", "*", "/", "%",
+    
+    # Aggregate functions
+    "COUNT", "SUM", "AVG", "MIN", "MAX", "STDEV", "VAR",
+    
+    # String functions
+    "LEN", "LENGTH", "SUBSTRING", "SUBSTR", "UPPER", "LOWER", "TRIM",
+    "LTRIM", "RTRIM", "REPLACE", "CHARINDEX", "PATINDEX", "CONCAT",
+    
+    # Date functions
+    "GETDATE", "DATEADD", "DATEDIFF", "YEAR", "MONTH", "DAY",
+    "DATEPART", "CAST", "CONVERT",
+    
+    # Conditional
+    "CASE", "WHEN", "THEN", "ELSE", "END", "IF",
+    
+    # Other functions
+    "ISNULL", "COALESCE", "NULLIF", "IIF",
+    
+    # Punctuation and symbols
+    "(", ")", ",", ";", ".", "[", "]", "'", "\"",
+    
+    # Set operations
+    "UNION", "INTERSECT", "EXCEPT", "ALL", "DISTINCT",
+    
+    # Subquery keywords
+    "ANY", "SOME", "AS", "ALIAS",
+    
+    # Window functions
+    "OVER", "PARTITION", "ROW_NUMBER", "RANK", "DENSE_RANK",
+    
+    # Data types (common ones)
+    "INT", "INTEGER", "VARCHAR", "CHAR", "TEXT", "DATETIME", "DATE",
+    "TIME", "DECIMAL", "NUMERIC", "FLOAT", "REAL", "BIT", "MONEY"
+  )
+  
+  # Preprocess the query
+  # Remove comments
+  sql_query <- gsub("--.*$", "", sql_query, perl = TRUE)
+  sql_query <- gsub("/\\*.*?\\*/", "", sql_query, perl = TRUE)
+  
+  # Convert to uppercase for consistent matching
+  sql_upper <- toupper(sql_query)
+  
+  # Split into tokens - this is a simplified tokenizer
+  # It splits on whitespace and common punctuation, keeping the punctuation
+  tokens <- unlist(str_split(sql_upper, "\\s+"))
+  tokens <- tokens[tokens != ""]  # Remove empty strings
+  
+  # Further split tokens that contain punctuation
+  all_tokens <- c()
+  for (token in tokens) {
+    # Split on punctuation but keep the punctuation
+    parts <- str_split(token, "([(),.;\\[\\]'\"=<>!+\\-*/%])", perl = TRUE)[[1]]
+    parts <- parts[parts != ""]
+    all_tokens <- c(all_tokens, parts)
+  }
+  
+  # Remove empty tokens
+  all_tokens <- all_tokens[all_tokens != ""]
+  
+  # Convert operators to uppercase for matching
+  sql_operators_upper <- toupper(sql_operators)
+  
+  # Identify operators and operands
+  operators <- c()
+  operands <- c()
+  
+  for (token in all_tokens) {
+    if (token %in% sql_operators_upper) {
+      operators <- c(operators, token)
+    } else if (!str_detect(token, "^\\s*$")) {  # Not just whitespace
+      # Consider it an operand (table names, column names, literals, etc.)
+      operands <- c(operands, token)
+    }
+  }
+  
+  # Calculate Halstead measures
+  # n1 = number of distinct operators
+  n1 <- length(unique(operators))
+  
+  # n2 = number of distinct operands  
+  n2 <- length(unique(operands))
+  
+  # N1 = total number of operators
+  N1 <- length(operators)
+  
+  # N2 = total number of operands
+  N2 <- length(operands)
+  
+  # Program vocabulary
+  n <- n1 + n2
+  
+  # Program length
+  N <- N1 + N2
+  
+  # Calculated estimated program length
+  Nhat <- n1 * log2(n1) + n2 * log2(n2)
+  
+  # Volume
+  Volume <- N * log2(n)
+  
+  # Difficulty
+  Difficulty <- (n1 / 2) * (N2 / n2)
+  
+  # Effort
+  Effort <- Difficulty * Volume
+  
+  # Handle edge cases
+  if (is.infinite(Nhat) || is.nan(Nhat)) Nhat <- 0
+  if (is.infinite(Volume) || is.nan(Volume)) Volume <- 0
+  if (is.infinite(Difficulty) || is.nan(Difficulty)) Difficulty <- 0
+  if (is.infinite(Effort) || is.nan(Effort)) Effort <- 0
+  
+  # Create result data frame
+  result <- data.frame(
+    n_1 = n1,
+    n_2 = n2,
+    N_1 = N1,
+    N_2 = N2,
+    n = n,
+    N = N,
+    Nhat = round(Nhat, 2),
+    Volume = round(Volume, 2),
+    Difficulty = round(Difficulty, 2),
+    Effort = round(Effort, 2),
+    stringsAsFactors = FALSE
+  )
+  
+  return(result)
+}
+
+# Example usage:
+# Simple query
+query1 <- "SELECT name, age FROM users WHERE age > 25"
+result1 <- halstead_complexity_sql(query1)
+print("Simple query results:")
+print(result1)
+
+# More complex query
+query2 <- "
+SELECT u.name, u.age, COUNT(o.id) as order_count, AVG(o.total) as avg_order
+FROM users u
+LEFT JOIN orders o ON u.id = o.user_id
+WHERE u.age BETWEEN 18 AND 65
+  AND u.status = 'active'
+GROUP BY u.name, u.age
+HAVING COUNT(o.id) > 5
+ORDER BY avg_order DESC
+"
+result2 <- halstead_complexity_sql(query2)
+print("\nComplex query results:")
+print(result2)
+```
+
+```{r}
+library(stringr)
+
+#' Compute Halstead Complexity Measures for MS SQL Queries
+#'
+#' This function takes an MS SQL query as a string and computes various 
+#' Halstead complexity measures including vocabulary, length, volume, 
+#' difficulty, and effort.
+#'
+#' @param sql_query A character string containing the SQL query
+#' @return A data frame with one row containing Halstead complexity measures
+#' @examples
+#' query <- "SELECT name, age FROM users WHERE age > 25 ORDER BY name"
+#' halstead_complexity_sql(query)
+halstead_complexity_sql <- function(sql_query) {
+  
+  # Define SQL operators (keywords, symbols, functions)
+  sql_operators <- c(
+    # SQL Keywords
+    "SELECT", "FROM", "WHERE", "ORDER", "BY", "GROUP", "HAVING", 
+    "INSERT", "INTO", "VALUES", "UPDATE", "SET", "DELETE", "CREATE",
+    "TABLE", "DROP", "ALTER", "INDEX", "VIEW", "PROCEDURE", "FUNCTION",
+    "TRIGGER", "DATABASE", "SCHEMA", "CONSTRAINT", "PRIMARY", "KEY",
+    "FOREIGN", "REFERENCES", "UNIQUE", "NOT", "NULL", "DEFAULT",
+    "CHECK", "AUTO_INCREMENT", "IDENTITY", "CLUSTERED", "NONCLUSTERED",
+    
+    # Joins
+    "JOIN", "INNER", "LEFT", "RIGHT", "FULL", "OUTER", "CROSS", "ON",
+    
+    # Logical operators
+    "AND", "OR", "IN", "EXISTS", "BETWEEN", "LIKE", "IS",
+    
+    # Comparison operators
+    "=", "!=", "<>", "<", ">", "<=", ">=",
+    
+    # Arithmetic operators
+    "+", "-", "*", "/", "%",
+    
+    # Aggregate functions
+    "COUNT", "SUM", "AVG", "MIN", "MAX", "STDEV", "VAR",
+    
+    # String functions
+    "LEN", "LENGTH", "SUBSTRING", "SUBSTR", "UPPER", "LOWER", "TRIM",
+    "LTRIM", "RTRIM", "REPLACE", "CHARINDEX", "PATINDEX", "CONCAT",
+    
+    # Date functions
+    "GETDATE", "DATEADD", "DATEDIFF", "YEAR", "MONTH", "DAY",
+    "DATEPART", "CAST", "CONVERT",
+    
+    # Conditional
+    "CASE", "WHEN", "THEN", "ELSE", "END", "IF",
+    
+    # Other functions
+    "ISNULL", "COALESCE", "NULLIF", "IIF",
+    
+    # Punctuation and symbols
+    "(", ")", ",", ";", ".", "[", "]", "'", "\"",
+    
+    # Set operations
+    "UNION", "INTERSECT", "EXCEPT", "ALL", "DISTINCT",
+    
+    # Subquery keywords
+    "ANY", "SOME", "AS", "ALIAS",
+    
+    # Window functions
+    "OVER", "PARTITION", "ROW_NUMBER", "RANK", "DENSE_RANK",
+    
+    # Data types (common ones)
+    "INT", "INTEGER", "VARCHAR", "CHAR", "TEXT", "DATETIME", "DATE",
+    "TIME", "DECIMAL", "NUMERIC", "FLOAT", "REAL", "BIT", "MONEY"
+  )
+  
+  # Preprocess the query
+  # Remove comments
+  sql_query <- gsub("--.*$", "", sql_query)
+  sql_query <- gsub("/\\*.*?\\*/", "", sql_query)
+  
+  # Convert to uppercase for consistent matching
+  sql_upper <- toupper(sql_query)
+  
+  # Split into tokens - this is a simplified tokenizer
+  # It splits on whitespace and common punctuation, keeping the punctuation
+  tokens <- unlist(str_split(sql_upper, "\\s+"))
+  tokens <- tokens[tokens != ""]  # Remove empty strings
+  
+  # Further split tokens that contain punctuation
+  all_tokens <- c()
+  for (token in tokens) {
+    # Split on punctuation but keep the punctuation
+    parts <- str_split(token, "([(),.;\\[\\]'\"=<>!+\\-*/%])")[[1]]
+    parts <- parts[parts != ""]
+    all_tokens <- c(all_tokens, parts)
+  }
+  
+  # Remove empty tokens
+  all_tokens <- all_tokens[all_tokens != ""]
+  
+  # Convert operators to uppercase for matching
+  sql_operators_upper <- toupper(sql_operators)
+  
+  # Identify operators and operands
+  operators <- c()
+  operands <- c()
+  
+  for (token in all_tokens) {
+    if (token %in% sql_operators_upper) {
+      operators <- c(operators, token)
+    } else if (!str_detect(token, "^\\s*$")) {  # Not just whitespace
+      # Consider it an operand (table names, column names, literals, etc.)
+      operands <- c(operands, token)
+    }
+  }
+  
+  # Calculate Halstead measures
+  # n1 = number of distinct operators
+  n1 <- length(unique(operators))
+  
+  # n2 = number of distinct operands  
+  n2 <- length(unique(operands))
+  
+  # N1 = total number of operators
+  N1 <- length(operators)
+  
+  # N2 = total number of operands
+  N2 <- length(operands)
+  
+  # Program vocabulary
+  n <- n1 + n2
+  
+  # Program length
+  N <- N1 + N2
+  
+  # Calculated estimated program length
+  Nhat <- n1 * log2(n1) + n2 * log2(n2)
+  
+  # Volume
+  Volume <- N * log2(n)
+  
+  # Difficulty
+  Difficulty <- (n1 / 2) * (N2 / n2)
+  
+  # Effort
+  Effort <- Difficulty * Volume
+  
+  # Handle edge cases
+  if (is.infinite(Nhat) || is.nan(Nhat)) Nhat <- 0
+  if (is.infinite(Volume) || is.nan(Volume)) Volume <- 0
+  if (is.infinite(Difficulty) || is.nan(Difficulty)) Difficulty <- 0
+  if (is.infinite(Effort) || is.nan(Effort)) Effort <- 0
+  
+  # Create result data frame
+  result <- data.frame(
+    n_1 = n1,
+    n_2 = n2,
+    N_1 = N1,
+    N_2 = N2,
+    n = n,
+    N = N,
+    Nhat = round(Nhat, 2),
+    Volume = round(Volume, 2),
+    Difficulty = round(Difficulty, 2),
+    Effort = round(Effort, 2),
+    stringsAsFactors = FALSE
+  )
+  
+  return(result)
+}
+
+# Example usage:
+# Simple query
+query1 <- "SELECT name, age FROM users WHERE age > 25"
+result1 <- halstead_complexity_sql(query1)
+print("Simple query results:")
+print(result1)
+
+# More complex query
+query2 <- "
+SELECT u.name, u.age, COUNT(o.id) as order_count, AVG(o.total) as avg_order
+FROM users u
+LEFT JOIN orders o ON u.id = o.user_id
+WHERE u.age BETWEEN 18 AND 65
+  AND u.status = 'active'
+GROUP BY u.name, u.age
+HAVING COUNT(o.id) > 5
+ORDER BY avg_order DESC
+"
+result2 <- halstead_complexity_sql(query2)
+print("\nComplex query results:")
+print(result2)
+
+query3 <-"SELECT person_id FROM PERSON"
+result3 <- halstead_complexity_sql(query3)
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
+
+```{r}
+library(stringr)
+
+#' Compute Halstead Complexity Measures for MS SQL Queries
+#'
+#' This function takes an MS SQL query as a string and computes various 
+#' Halstead complexity measures including vocabulary, length, volume, 
+#' difficulty, and effort.
+#'
+#' @param sql_query A character string containing the SQL query
+#' @return A data frame with one row containing Halstead complexity measures
+#' @examples
+#' query <- "SELECT name, age FROM users WHERE age > 25 ORDER BY name"
+#' halstead_complexity_sql(query)
+halstead_complexity_sql <- function(sql_query) {
+  
+  # Define SQL operators (keywords, symbols, functions)
+  sql_operators <- c(
+    # SQL Keywords
+    "SELECT", "FROM", "WHERE", "ORDER", "BY", "GROUP", "HAVING", 
+    "INSERT", "INTO", "VALUES", "UPDATE", "SET", "DELETE", "CREATE",
+    "TABLE", "DROP", "ALTER", "INDEX", "VIEW", "PROCEDURE", "FUNCTION",
+    "TRIGGER", "DATABASE", "SCHEMA", "CONSTRAINT", "PRIMARY", "KEY",
+    "FOREIGN", "REFERENCES", "UNIQUE", "NOT", "NULL", "DEFAULT",
+    "CHECK", "AUTO_INCREMENT", "IDENTITY", "CLUSTERED", "NONCLUSTERED",
+    
+    # Joins
+    "JOIN", "INNER", "LEFT", "RIGHT", "FULL", "OUTER", "CROSS", "ON",
+    
+    # Logical operators
+    "AND", "OR", "IN", "EXISTS", "BETWEEN", "LIKE", "IS",
+    
+    # Comparison operators
+    "=", "!=", "<>", "<", ">", "<=", ">=",
+    
+    # Arithmetic operators
+    "+", "-", "*", "/", "%",
+    
+    # Aggregate functions
+    "COUNT", "SUM", "AVG", "MIN", "MAX", "STDEV", "VAR",
+    
+    # String functions
+    "LEN", "LENGTH", "SUBSTRING", "SUBSTR", "UPPER", "LOWER", "TRIM",
+    "LTRIM", "RTRIM", "REPLACE", "CHARINDEX", "PATINDEX", "CONCAT",
+    
+    # Date functions
+    "GETDATE", "DATEADD", "DATEDIFF", "YEAR", "MONTH", "DAY",
+    "DATEPART", "CAST", "CONVERT",
+    
+    # Conditional
+    "CASE", "WHEN", "THEN", "ELSE", "END", "IF",
+    
+    # Other functions
+    "ISNULL", "COALESCE", "NULLIF", "IIF",
+    
+    # Punctuation and symbols
+    "(", ")", ",", ";", ".", "[", "]", "'", "\"",
+    
+    # Set operations
+    "UNION", "INTERSECT", "EXCEPT", "ALL", "DISTINCT",
+    
+    # Subquery keywords
+    "ANY", "SOME", "AS", "ALIAS",
+    
+    # Window functions
+    "OVER", "PARTITION", "ROW_NUMBER", "RANK", "DENSE_RANK",
+    
+    # Data types (common ones)
+    "INT", "INTEGER", "VARCHAR", "CHAR", "TEXT", "DATETIME", "DATE",
+    "TIME", "DECIMAL", "NUMERIC", "FLOAT", "REAL", "BIT", "MONEY"
+  )
+  
+  # Preprocess the query
+  # Remove comments
+  sql_query <- gsub("--.*$", "", sql_query)
+  sql_query <- gsub("/\\*.*?\\*/", "", sql_query)
+  
+  # Convert to uppercase for consistent matching
+  sql_upper <- toupper(sql_query)
+  
+  # Tokenize the SQL query
+  # Use a more sophisticated approach to split while preserving operators
+  # Replace punctuation with spaces around them, then split
+  sql_tokenized <- sql_upper
+  
+  # Add spaces around operators to ensure they're separated
+  operators_to_separate <- c("\\(", "\\)", ",", ";", "\\.", "\\[", "\\]", 
+                            "'", "\"", "=", "!=", "<>", "<=", ">=", "<", ">", 
+                            "\\+", "-", "\\*", "/", "%")
+  
+  for (op in operators_to_separate) {
+    sql_tokenized <- gsub(paste0("(", op, ")"), " \\1 ", sql_tokenized)
+  }
+  
+  # Split on whitespace and remove empty tokens
+  all_tokens <- unlist(str_split(sql_tokenized, "\\s+"))
+  all_tokens <- all_tokens[all_tokens != "" & !str_detect(all_tokens, "^\\s*$")]
+  
+  # Convert operators to uppercase for matching
+  sql_operators_upper <- toupper(sql_operators)
+  
+  # Identify operators and operands
+  operators <- c()
+  operands <- c()
+  
+  for (token in all_tokens) {
+    if (token %in% sql_operators_upper) {
+      operators <- c(operators, token)
+    } else if (!str_detect(token, "^\\s*$")) {  # Not just whitespace
+      # Consider it an operand (table names, column names, literals, etc.)
+      operands <- c(operands, token)
+    }
+  }
+  
+  # Calculate Halstead measures
+  # n1 = number of distinct operators
+  n1 <- length(unique(operators))
+  
+  # n2 = number of distinct operands  
+  n2 <- length(unique(operands))
+  
+  # N1 = total number of operators
+  N1 <- length(operators)
+  
+  # N2 = total number of operands
+  N2 <- length(operands)
+  
+  # Program vocabulary
+  n <- n1 + n2
+  
+  # Program length
+  N <- N1 + N2
+  
+  # Calculated estimated program length
+  Nhat <- n1 * log2(n1) + n2 * log2(n2)
+  
+  # Volume
+  Volume <- N * log2(n)
+  
+  # Difficulty
+  Difficulty <- (n1 / 2) * (N2 / n2)
+  
+  # Effort
+  Effort <- Difficulty * Volume
+  
+  # Handle edge cases
+  if (is.infinite(Nhat) || is.nan(Nhat)) Nhat <- 0
+  if (is.infinite(Volume) || is.nan(Volume)) Volume <- 0
+  if (is.infinite(Difficulty) || is.nan(Difficulty)) Difficulty <- 0
+  if (is.infinite(Effort) || is.nan(Effort)) Effort <- 0
+  
+  # Create result data frame
+  result <- data.frame(
+    n_1 = n1,
+    n_2 = n2,
+    N_1 = N1,
+    N_2 = N2,
+    n = n,
+    N = N,
+    Nhat = round(Nhat, 2),
+    Volume = round(Volume, 2),
+    Difficulty = round(Difficulty, 2),
+    Effort = round(Effort, 2),
+    stringsAsFactors = FALSE
+  )
+  
+  return(result)
+}
+
+# Example usage:
+# Simple query
+query1 <- "SELECT name, age FROM users WHERE age > 25"
+result1 <- halstead_complexity_sql(query1)
+print("Simple query results:")
+print(result1)
+
+# Let's also create a debug version to see the tokens
+halstead_complexity_sql_debug <- function(sql_query) {
+  # Same preprocessing as main function
+  sql_query <- gsub("--.*$", "", sql_query)
+  sql_query <- gsub("/\\*.*?\\*/", "", sql_query)
+  sql_upper <- toupper(sql_query)
+  
+  # Same tokenization
+  sql_tokenized <- sql_upper
+  operators_to_separate <- c("\\(", "\\)", ",", ";", "\\.", "\\[", "\\]", 
+                            "'", "\"", "=", "!=", "<>", "<=", ">=", "<", ">", 
+                            "\\+", "-", "\\*", "/", "%")
+  
+  for (op in operators_to_separate) {
+    sql_tokenized <- gsub(paste0("(", op, ")"), " \\1 ", sql_tokenized)
+  }
+  
+  all_tokens <- unlist(str_split(sql_tokenized, "\\s+"))
+  all_tokens <- all_tokens[all_tokens != "" & !str_detect(all_tokens, "^\\s*$")]
+  
+  sql_operators_upper <- toupper(c(
+    "SELECT", "FROM", "WHERE", "ORDER", "BY", "GROUP", "HAVING", 
+    "INSERT", "INTO", "VALUES", "UPDATE", "SET", "DELETE", "CREATE",
+    "=", "!=", "<>", "<", ">", "<=", ">=", "+", "-", "*", "/", "%",
+    "(", ")", ",", ";", ".", "[", "]", "'", "\"", "AND", "OR", "NOT"
+  ))
+  
+  operators <- c()
+  operands <- c()
+  
+  for (token in all_tokens) {
+    if (token %in% sql_operators_upper) {
+      operators <- c(operators, token)
+    } else {
+      operands <- c(operands, token)
+    }
+  }
+  
+  cat("All tokens:", paste(all_tokens, collapse = ", "), "\n")
+  cat("Operators:", paste(operators, collapse = ", "), "\n")
+  cat("Operands:", paste(operands, collapse = ", "), "\n")
+  
+  return(list(tokens = all_tokens, operators = operators, operands = operands))
+}
+
+print("\nDebug output for simple query:")
+debug1 <- halstead_complexity_sql_debug(query1)
+
+# More complex query
+query2 <- "
+SELECT u.name, u.age, COUNT(o.id) as order_count, AVG(o.total) as avg_order
+FROM users u
+LEFT JOIN orders o ON u.id = o.user_id
+WHERE u.age BETWEEN 18 AND 65
+  AND u.status = 'active'
+GROUP BY u.name, u.age
+HAVING COUNT(o.id) > 5
+ORDER BY avg_order DESC
+"
+result2 <- halstead_complexity_sql(query2)
+print("\nComplex query results:")
+print(result2)
+
+query3 <-"SELECT person_id FROM PERSON"
+result3 <- halstead_complexity_sql(query3)
+```
+
+```{r}
+query <-"SELECT person_id FROM PERSON"
+result <- halstead_complexity_sql(query)
+result
+```
+
+```{r}
+query2 <- "
+SELECT u.name, u.age, COUNT(o.id) as order_count, AVG(o.total) as avg_order
+FROM users u
+LEFT JOIN orders o ON u.id = o.user_id
+WHERE u.age BETWEEN 18 AND 65
+  AND u.status = 'active'
+GROUP BY u.name, u.age
+HAVING COUNT(o.id) > 5
+ORDER BY avg_order DESC
+"
+result2 <- halstead_complexity_sql(query2)
+print(result2)
+```
+
+```{r}
+omop_g01 <- "SELECT C.concept_id, C.concept_name, C.concept_code, C.concept_class_id,
+C.standard_concept, C.vocabulary_id, V.vocabulary_name
+FROM concept C, vocabulary V
+WHERE C.concept_id = 192671
+  AND C.vocabulary_id = V.vocabulary_id
+  AND sysdate BETWEEN valid_start_date
+  AND valid_end_date;"
+omop_g01_result <- halstead_complexity_sql(omop_g01)
+omop_g01_result
+```
