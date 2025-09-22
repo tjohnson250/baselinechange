@@ -7,6 +7,7 @@ format:
 editor: visual
 bibliography: references.bib
 highlight-style: github
+reference-location: margin
 ---
 
 ```{r}
@@ -42,9 +43,11 @@ The goal of this notebook is to demonstrate how to estimate treatment effects of
 
 There are two common approaches to defining the outcome: (1) Compare the difference in the follow-up measures between the experimental and control group; or (2) Compare the difference in change scores between the two groups, where a change score for an individual is the difference between the follow-up blood pressure and the baseline blood pressure.
 
+In this notebook we use the standard notation from the potential outcomes approach to refer the variables. This matches the notation used in the change score analysis in [@tennant2021].
+
 We will use five increasingly complex data generating models to explore this problem:
 
-1.  A ground truth model where the potential outcomes (the outcome measure under both treatment and control) are known for all participants.
+1.  A model where the potential outcomes (the outcome measure under both treatment and control) are known for all participants.
 2.  A Randomized Controlled Trial (RCT) with no loss to follow-up.
 3.  An RCT with differential loss to follow-up.
 4.  An observational study with treatment assignment confounding
@@ -52,23 +55,24 @@ We will use five increasingly complex data generating models to explore this pro
 
 We will also consider four causal estimands based on the two approaches discussed above:
 
-1.  The average treatment effect (ATE) on the outcome at follow-up, expressed as the difference between the outcome under treatment vs. control:\
-    $$\mathrm{E}(Y_1^x) - \mathrm{E}(Y_1^{x'})$$ {#eq-att-outcome}\
-    Here, we use the potential outcomes notation, where $Y_1$ is the follow-up outcome, $x$ is the treatment, and $x'$ is the control. $Y_1^x$ represents the value that a participant would have if treated. Hence this effect estimate is the difference between the expected outcome if all patients in the study were treated and the expected outcome if all patients were not treated.
+1.  The average treatment effect (ATE) on the outcome at follow-up, expressed as the difference between the follow-up measure under treatment vs. control:\
+    $$\mathrm{E}(Y_1^x) - \mathrm{E}(Y_1^{x'})$$ {#eq-att-outcome}
 
-2.  The average treatment effect on the change score:\
+2.  Here, we use the potential outcomes notation, where $Y_1$ is the follow-up outcome, $x$ is the treatment, and $x'$ is the control. $Y_1^x$ represents the value that a participant would have if treated. Hence this effect estimate is the difference between the expected outcome if all patients in the study were treated and the expected outcome if all patients were not treated.
+
+3.  The average treatment effect on the change score:\
     $$
     \mathrm{E}(Y_1^x - Y_0^x) - \mathrm{E}(Y_1^{x'} - Y_0^{x'})
     $$ {#eq-att-changescore}\
     This is the difference between the change score $Y_1 - Y_0$ under treatment vs. control, where $Y_0$ is the baseline score.
 
-3.  The conditional treatment effect on the follow-up outcome, conditioned on the observed baseline value $Y_0$:\
+4.  The conditional treatment effect on the follow-up outcome, conditioned on the observed baseline value $Y_0$:\
     $$
     E[Y_1^x - Y_1^{x'} | Y_0 = y_0]
     $$ {#eq-CTE-fu}\
     This estimand represents the effect of treatment on the part of the follow-up outcome that hasn't already been determined by the baseline value.
 
-4.  The conditional treatment effect on the change score, conditioned on the observed baseline value $Y_0$:\
+5.  The conditional treatment effect on the change score, conditioned on the observed baseline value $Y_0$:\
     $$
     E[(Y_1^x - Y_0^x) - (Y_1^{x'} - Y_0^{x'}) | Y_0 = y_0]
     $$ {#eq-CTE-cs}\
@@ -439,7 +443,7 @@ We can now consider an RCT using the same data, but with randomization of treatm
 
 ## Model 2: RCT with Additive Treatment Effect
 
-This model uses the same causal DAG and potential outcomes generated for Model 1. We copy the dataset from Model 1, then add a `group` variable randomly assigns each patient to eithe the control or treatment group. Based on the assigned treatment, we then copy the appropriate potential outcomes to the observed `time1` and `change1`. Finally we save all of the data, then create a new data frame that includes only the variables we would see in an RCT.
+This model uses the same causal DAG and potential outcomes generated for Model 1. We copy the dataset from Model 1, then add a `group` variable that randomly assigns each patient to either the control or treatment group. Based on the assigned treatment, we then copy the appropriate potential outcomes to the observed `time1` and `change1`. Finally we save all of the data, then create a new data frame that includes only the variables we would see in an RCT.
 
 ::: callout-note
 ## Technical Note
