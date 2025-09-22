@@ -33,11 +33,149 @@ table caption {
 }
 ```
 
+Sample code for using mathematical symbols as labels in DAGs. I need this to convert to the unified labeling system.
+
+```{r}
+library(ggdag)
+library(ggplot2)
+
+# Create DAG with LaTeX-style math labels
+dag <- dagify(
+  Y ~ X + Z,
+  X ~ Z,
+  labels = c(
+    "Y" = "Y",
+    "X" = "X", 
+    "Z" = "Z"
+  )
+) %>%
+  tidy_dagitty()
+
+# Modify labels to use mathematical expressions
+dag$data$label_math <- case_when(
+  dag$data$name == "Y" ~ "Y[1]",
+  dag$data$name == "X" ~ "Y[0]", 
+  dag$data$name == "Z" ~ "Delta*Y",
+  TRUE ~ dag$data$name
+)
+
+# Plot with math expressions
+ggdag(dag) +
+  geom_dag_node(aes(color = name)) +
+  geom_dag_text(aes(label = label_math), parse = TRUE, size = 3) +
+  geom_dag_edges() +
+  theme_dag()
+
+
+
+```
+
 ::: callout-caution
 ## Construction Zone
 
 This is a work in progress and subject to change nearly daily. At this stage there are numerous inconsistencies as I work to create a single simulated dataset that demonstrates the desired issues at hand while analyzing change from baseline.
 :::
+
+```{r}
+library(ggdag)
+library(ggplot2)
+
+# Create DAG
+dag <- dagify(
+  Y ~ X + Z + W,
+  X ~ Z,
+  W ~ Z
+) %>%
+  tidy_dagitty()
+
+# Add math labels and status
+dag$data$math_label <- case_when(
+  dag$data$name == "Y" ~ "Delta*Y",
+  dag$data$name == "X" ~ "X",
+  dag$data$name == "Z" ~ "Z", 
+  dag$data$name == "W" ~ "W",
+  TRUE ~ dag$data$name
+)
+
+# Define status for each node
+dag$data$status <- case_when(
+  dag$data$name == "Y" ~ "Outcome",
+  dag$data$name == "X" ~ "Treatment", 
+  dag$data$name == "Z" ~ "Adjusted",
+  dag$data$name == "W" ~ "Unadjusted",
+  TRUE ~ "Other"
+)
+
+# Plot with custom legend
+ggdag(dag) +
+  geom_dag_node(aes(color = status), size = 15) +
+  geom_dag_text(aes(label = math_label), parse = TRUE, size = 4, color = "white") +
+  geom_dag_edges() +
+  scale_color_manual(
+    name = "Variable Status",
+    values = c(
+      "Outcome" = "#E31A1C",
+      "Treatment" = "#1F78B4", 
+      "Adjusted" = "#33A02C",
+      "Unadjusted" = "#FF7F00"
+    )
+  ) +
+  theme_dag_blank() +
+  theme(legend.position = "bottom")
+```
+
+```{r}
+library(ggdag)
+
+# Define coordinates for a more complex DAG
+coords <- list(
+  x = c(Y = 4, X = 2, Z1 = 1, Z2 = 3, U1 = 0, U2 = 2, C = 1.5),
+  y = c(Y = 1, X = 1, Z1 = 2, Z2 = 2, U1 = 3, U2 = 3, C = 0)
+)
+
+dag <- dagify(
+  Y ~ X + Z1 + Z2 + U2,
+  X ~ Z1 + Z2 + U1 + C,
+  Z1 ~ U1,
+  Z2 ~ U2,
+  C ~ U1,
+  coords = coords
+) %>%
+  tidy_dagitty()
+
+# Add labels and status
+dag$data$math_label <- case_when(
+  dag$data$name == "Y" ~ "Delta*Y",
+  dag$data$name == "X" ~ "X",
+  dag$data$name == "Z1" ~ "Z[1]",
+  dag$data$name == "Z2" ~ "Z[2]",
+  dag$data$name == "U1" ~ "U[1]",
+  dag$data$name == "U2" ~ "U[2]", 
+  dag$data$name == "C" ~ "C"
+)
+
+dag$data$status <- case_when(
+  dag$data$name == "Y" ~ "Outcome",
+  dag$data$name == "X" ~ "Treatment",
+  dag$data$name %in% c("Z1", "Z2", "C") ~ "Adjusted",
+  dag$data$name %in% c("U1", "U2") ~ "Unobserved"
+)
+
+ggdag(dag) +
+  geom_dag_node(aes(color = status), size = 15) +
+  geom_dag_text(aes(label = math_label), parse = TRUE, size = 3.5, color = "white") +
+  geom_dag_edges() +
+  scale_color_manual(
+    name = "Status",
+    values = c(
+      "Outcome" = "#E31A1C",
+      "Treatment" = "#1F78B4", 
+      "Adjusted" = "#33A02C",
+      "Unobserved" = "#FF7F00"
+    )
+  ) +
+  theme_dag_blank()
+```
 
 The goal of this notebook is to demonstrate how to estimate treatment effects of a dichotomous (binary) treatment on change from a continuous baseline measure in both experimental and observational designs. For example, suppose we want to estimate the effect of a new drug vs. placebo for reducing blood pressure after 6 months of use. Here, the blood pressure at treatment assignment is the baseline value and blood pressure measured 6 months after treatment assignment is the follow-up measure.
 
