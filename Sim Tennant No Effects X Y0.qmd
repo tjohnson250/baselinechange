@@ -1,0 +1,88 @@
+---
+title: "Unrelated repeated measures"
+format: html
+editor: visual
+bibliography: references.bib
+highlight-style: github
+reference-location: margin
+---
+
+## Exploring Tennant's Remark on Change Scores
+
+Tennant [@tennant2021] has what seems like an odd remark in the intro about change scores and residual correlation between two unrelated repeated values Y0 and Y1 and their change score Y1-Y0, as long as both variables have the same variance. The statement is odd because the authors do not give an explanation of why they bring it up or how it relates to the purpose of the paper. The only purpose I see, is that it might raise a question about spurious correlation when a researchers uses change scores.
+
+In this brief document I explore this issue in an attempt to determine how it might be relevant.
+
+## Generative model where treatment and baseline have no effect on the follow-up score and hence the change score.
+
+Neither treatment $X$ or baseline score $Y_0$ has an effect on follow-up score $Y_1$:
+
+```{r}
+library(tidyverse)
+n <- 1000
+y0 <- rnorm(n)
+y1 <- rnorm(n)
+dy <- y1 - y0
+x <- rbinom(n, 1, .5)
+data <- tibble(y0, y1, x, dy)
+```
+
+```{r}
+library(ggplot2)
+ggplot(data, aes(x=x, y=y1)) + geom_point()
+```
+
+If we assume that both $X$ and $Y_0$ directly effect $Y_1$ then we have the following causal DAG:
+
+```{r}
+library(ggdag)
+library(ggplot2)
+
+# Create the DAG with the specified causal structure
+dag <- dagify(
+  Y_1 ~ X + Y_0,
+  DY ~ Y_0 + Y_1,
+  exposure = "X" #,
+  # outcome = "Y_1",
+  # labels = c(
+  #   "X" = "Treatment",
+  #   "Y_0" = "Baseline",
+  #   "Y_1" = "Follow-up"
+  # )
+)
+
+# Plot the DAG
+ggdag(dag, text = TRUE) + #, use_labels = "label") +
+  theme_dag() +
+  labs(title = "Causal DAG: X → Y_1 and Y_0 → Y_1")
+```
+
+If we hypothesize the dag above, the marginal association between X and Y_1 will give us the causal effect of X on Y_1:
+
+```{r}
+res <- lm(y1 ~ x, data = data)
+summary(res)
+```
+
+As expected, X has no significant treatment effect on Y.
+
+Suppose we want to estimate the effect of X on DY. According to the DAG, Y_0 is a confounder of the relationship between X and DY, so we must adjust for Y_0 to block the backdoor path:
+
+```{r}
+res <- lm(dy ~ x + y0, data = data)
+summary(res)
+```
+
+Let's use `quap` from the statistical rethinking package to do a Bayesian analysis of the effect on y1
+
+```{r}
+m3.1 <- quap(
+  alist(
+    y1 ~ dnorm(mu, sigma),
+    mu <- a + b*x,
+    a ~ dnorm(-10, 10),
+    b ~ dunif(0, 1),
+    sigma ~ dunif(0,10)
+  ), data = list(W=W, H=H)
+)
+```
