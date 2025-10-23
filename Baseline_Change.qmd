@@ -39,11 +39,22 @@ table caption {
 This is a work in progress and subject to change nearly daily. At this stage there are numerous inconsistencies as I work to create a single simulated dataset that demonstrates the desired issues at hand while analyzing change from baseline.
 :::
 
-The goal of this notebook is to demonstrate how to estimate treatment effects of a dichotomous (binary) treatment on change from a continuous baseline measure in both experimental and observational designs. For example, suppose we want to estimate the effect of a new drug vs. placebo for reducing blood pressure after 6 months of use. Here, the blood pressure at treatment assignment is the baseline value, which we will denote as $Y_0$ and blood pressure measured 6 months after treatment assignment is the follow-up measure, denoted $Y_1$.
+The goal of this notebook is to demonstrate how to estimate treatment effects of a dichotomous (binary) treatment on change from a continuous baseline measure in both experimental and observational designs. For example, suppose we want to estimate the effect of a new drug vs. placebo for reducing blood pressure after 6 months of use. Here, the blood pressure at treatment assignment is the baseline value, which we will denote as $Y_0$, and blood pressure measured 6 months after treatment assignment is the follow-up measure, denoted $Y_1$.
 
-There are two common approaches to defining the outcome: (1) Compare the difference in the follow-up measures between the experimental and control group; or (2) Compare the difference in change scores between the two groups, where a change score for an individual is the difference between the follow-up blood pressure and the baseline blood pressure: $\Delta Y = Y_1 - Y_0$
+There are two common approaches to defining the outcome: (1) Compare the difference in the follow-up measures between the experimental and control group; or (2) Compare the difference in change scores between the two groups, where a change score, $\Delta Y$, for an individual is the difference between the follow-up blood pressure and the baseline blood pressure: \$\\Delta Y = Y_1 - Y_0\$
 
-In this notebook we use the notation from the potential outcomes approach to causal inference to refer to the variables of interest. This matches the notation used in the change score analysis in [@tennant2021].
+There is considerable controversy
+
+In this notebook we use the notation from the potential outcomes approach to causal inference to refer to the variables of interest:
+
+| Variable | Description |
+|------------|------------------------------------------------------------|
+| $Y_0$ | Baseline measure (continuous) |
+| $Y_1$ | Follow-up measure (continuous) |
+| $X$ | Treatment (binary). $x=1$ when treated, otherwise $x = 0$ |
+| $\Delta Y$ | Change score. $\Delta Y = Y_1 - Y_0$ |
+| $Y_1^x, \Delta Y^x$ | Follow-up measure and change score when treated ($x = 1$) |
+| $Y_1^{x'}, \Delta Y^{x'}$ | Follow-up measure and change score when untreated (\$x = 0\$) |
 
 We will use five increasingly complex data generating models to explore this problem:
 
