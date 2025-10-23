@@ -41,14 +41,20 @@ This is a work in progress and subject to change nearly daily. At this stage the
 
 The goal of this notebook is to demonstrate how to estimate treatment effects of a dichotomous (binary) treatment on change from a continuous baseline measure in both experimental and observational designs. For example, suppose we want to estimate the effect of a new drug vs. placebo for reducing blood pressure after 6 months of use. Here, the blood pressure at treatment assignment is the baseline value, which we will denote as $Y_0$, and blood pressure measured 6 months after treatment assignment is the follow-up measure, denoted $Y_1$.
 
-There are two common approaches to defining the outcome: (1) Compare the difference in the follow-up measures between the experimental and control group; or (2) Compare the difference in change scores between the two groups, where a change score, $\Delta Y$, for an individual is the difference between the follow-up blood pressure and the baseline blood pressure: \$\\Delta Y = Y_1 - Y_0\$
+There are two common approaches to defining the outcome: (1) Compare the difference in the follow-up measures between the experimental and control group; or (2) Compare the difference in change scores between the two groups, where a change score, $\Delta Y$, for an individual is the difference between the follow-up blood pressure $Y_1$ and the baseline blood pressure $Y_0$: $\Delta Y = Y_1 - Y_0$
 
-There is considerable controversy
+::: callout-warning
+## Technical Note
 
-In this notebook we use the notation from the potential outcomes approach to causal inference to refer to the variables of interest:
+There is considerable controversy over whether and when to use change scores vs follow-up measures as the effect estimate. See @tennant2021 and @glymour2022 for a discussion of some of the issues. A number of papers, going back decades, discuss this topic. However, my understanding is that much of the controversy stems from the fact that few researchers use proper causal thinking and methods when designing their studies and estimating effects. The controversy is further amplified because there are many different dimensions to the problem with different researchers focusing on a different subset of those dimensions. Finally, many older papers were written without the benefit of modern causal inference theory and methods, so they lack the theoretical and mathematical foundation to properly address the issues.
+
+If you read @tennant2021, you will see that despite the title warning that "change scores do not estimate causal effects" he later in the paper contradicts the title by correctly stating that change scores do indeed estimate causal effects when the baseline measure is a competing effect of the follow-up measure. This is true of the example that I use throughout this paper. In his paper, he uses other examples in which the "baseline measure" is partly caused by the treatment. In my opinion, such measures are not truly baseline measures. In addition, if you suspect this to be true, then the resulting causal DAG will directly guide how you select the effect to estimate and what is needed to do the estimation.
+:::
+
+In this notebook I use the notation from the potential outcomes approach to causal inference to refer to the variables of interest. Don't worry, I will repeat these definitions as they are used below.
 
 | Variable | Description |
-|------------|------------------------------------------------------------|
+|----------------|--------------------------------------------------------|
 | $Y_0$ | Baseline measure (continuous) |
 | $Y_1$ | Follow-up measure (continuous) |
 | $X$ | Treatment (binary). $x=1$ when treated, otherwise $x = 0$ |
@@ -64,17 +70,19 @@ We will use five increasingly complex data generating models to explore this pro
 4.  An observational study with treatment assignment confounding
 5.  An observational study with treatment assignment confounding and loss to follow-up.
 
-We will also consider four causal estimands based on the two approaches discussed above:
+We will also consider four ***causal estimands***[^1] based on the two approaches discussed above:
+
+[^1]: A ***causal estimand*** is the value we wish to estimate, such as the difference in follow-up measures between the experimental and the control group.
 
 1.  The average treatment effect (ATE) on the outcome at follow-up, expressed as the difference between the follow-up measure under treatment vs. control:\
     $$\mathrm{E}(Y_1^x) - \mathrm{E}(Y_1^{x'})$$ {#eq-att-outcome}
 
     Here, $Y_1$ is the follow-up outcome, $x$ is the treatment, and $x'$ is the control. $Y_1^x$ represents the value that a participant would have if treated, whereas $Y_1^{x'}$ represents the value that a participant would have if untreated. Hence this effect estimate is the difference between the expected outcome if *all* patients in the study were treated and the expected outcome if *all* patients were not treated.
 
-2.  The average treatment effect on the change score:
+2.  The average treatment effect on the change score $\Delta Y$:
 
     $$E(\Delta Y^x) - E(\Delta Y^{x'})$$\
-    This is the difference between the expected value of the change score if all patients had been treated $Y_1^x$ and the expected value if all patients had been untreated $Y_1^{x'}$. We can expand this equation to:\
+    This is the difference between the expected value of the change score if all patients had been treated $\Delta Y_1^x$ and the expected value if all patients had been untreated $\Delta Y_1^{x'}$. We can expand this equation to:\
     $$
     \mathrm{E}(Y_1^x - Y_0^x) - \mathrm{E}(Y_1^{x'} - Y_0^{x'})
     $$ {#eq-att-changescore}
@@ -87,7 +95,7 @@ We will also consider four causal estimands based on the two approaches discusse
 
 4.  The conditional treatment effect on the change score, conditioned on the observed baseline value $Y_0$:\
     $$
-    E[(Y_1^x - Y_0^x) - (Y_1^{x'} - Y_0^{x'}) | Y_0 = y_0]
+    E[\Delta Y^x - \Delta Y^{x'}) | Y_0 = y_0]
     $$ {#eq-CTE-cs}\
     This estimand represents the effect of treatment on the part of the change score that hasn't already been determined by the baseline value. Note that because the change score includes the baseline value $Y_0$, this estimand is equivalent to @eq-CTE-fu.
 
