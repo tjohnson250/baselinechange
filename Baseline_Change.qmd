@@ -39,11 +39,22 @@ table caption {
 This is a work in progress and subject to change nearly daily. At this stage there are numerous inconsistencies as I work to create a single simulated dataset that demonstrates the desired issues at hand while analyzing change from baseline.
 :::
 
-The goal of this notebook is to demonstrate how to estimate treatment effects of a dichotomous (binary) treatment on change from a continuous baseline measure in both experimental and observational designs. For example, suppose we want to estimate the effect of a new drug vs. placebo for reducing blood pressure after 6 months of use. Here, the blood pressure at treatment assignment is the baseline value and blood pressure measured 6 months after treatment assignment is the follow-up measure.
+The goal of this notebook is to demonstrate how to estimate treatment effects of a dichotomous (binary) treatment on change from a continuous baseline measure in both experimental and observational designs. For example, suppose we want to estimate the effect of a new drug vs. placebo for reducing blood pressure after 6 months of use. Here, the blood pressure at treatment assignment is the baseline value, which we will denote as $Y_0$, and blood pressure measured 6 months after treatment assignment is the follow-up measure, denoted $Y_1$.
 
-There are two common approaches to defining the outcome: (1) Compare the difference in the follow-up measures between the experimental and control group; or (2) Compare the difference in change scores between the two groups, where a change score for an individual is the difference between the follow-up blood pressure and the baseline blood pressure.
+There are two common approaches to defining the outcome: (1) Compare the difference in the follow-up measures between the experimental and control group; or (2) Compare the difference in change scores between the two groups, where a change score, $\Delta Y$, for an individual is the difference between the follow-up blood pressure and the baseline blood pressure: \$\\Delta Y = Y_1 - Y_0\$
 
-In this notebook we use the standard notation from the potential outcomes approach to refer the variables. This matches the notation used in the change score analysis in [@tennant2021].
+There is considerable controversy
+
+In this notebook we use the notation from the potential outcomes approach to causal inference to refer to the variables of interest:
+
+| Variable | Description |
+|------------|------------------------------------------------------------|
+| $Y_0$ | Baseline measure (continuous) |
+| $Y_1$ | Follow-up measure (continuous) |
+| $X$ | Treatment (binary). $x=1$ when treated, otherwise $x = 0$ |
+| $\Delta Y$ | Change score. $\Delta Y = Y_1 - Y_0$ |
+| $Y_1^x, \Delta Y^x$ | Follow-up measure and change score when treated ($x = 1$) |
+| $Y_1^{x'}, \Delta Y^{x'}$ | Follow-up measure and change score when untreated (\$x = 0\$) |
 
 We will use five increasingly complex data generating models to explore this problem:
 
@@ -51,28 +62,30 @@ We will use five increasingly complex data generating models to explore this pro
 2.  A Randomized Controlled Trial (RCT) with no loss to follow-up.
 3.  An RCT with differential loss to follow-up.
 4.  An observational study with treatment assignment confounding
-5.  An observational study with treatment assignment counfounding and loss to follow-up.
+5.  An observational study with treatment assignment confounding and loss to follow-up.
 
 We will also consider four causal estimands based on the two approaches discussed above:
 
 1.  The average treatment effect (ATE) on the outcome at follow-up, expressed as the difference between the follow-up measure under treatment vs. control:\
     $$\mathrm{E}(Y_1^x) - \mathrm{E}(Y_1^{x'})$$ {#eq-att-outcome}
 
-2.  Here, we use the potential outcomes notation, where $Y_1$ is the follow-up outcome, $x$ is the treatment, and $x'$ is the control. $Y_1^x$ represents the value that a participant would have if treated. Hence this effect estimate is the difference between the expected outcome if all patients in the study were treated and the expected outcome if all patients were not treated.
+    Here, $Y_1$ is the follow-up outcome, $x$ is the treatment, and $x'$ is the control. $Y_1^x$ represents the value that a participant would have if treated, whereas $Y_1^{x'}$ represents the value that a participant would have if untreated. Hence this effect estimate is the difference between the expected outcome if *all* patients in the study were treated and the expected outcome if *all* patients were not treated.
 
-3.  The average treatment effect on the change score:\
+2.  The average treatment effect on the change score:
+
+    $$E(\Delta Y^x) - E(\Delta Y^{x'})$$\
+    This is the difference between the expected value of the change score if all patients had been treated $Y_1^x$ and the expected value if all patients had been untreated $Y_1^{x'}$. We can expand this equation to:\
     $$
     \mathrm{E}(Y_1^x - Y_0^x) - \mathrm{E}(Y_1^{x'} - Y_0^{x'})
-    $$ {#eq-att-changescore}\
-    This is the difference between the change score $Y_1 - Y_0$ under treatment vs. control, where $Y_0$ is the baseline score.
+    $$ {#eq-att-changescore}
 
-4.  The conditional treatment effect on the follow-up outcome, conditioned on the observed baseline value $Y_0$:\
+3.  The conditional treatment effect on the follow-up outcome, conditioned on the observed baseline value $Y_0$:\
     $$
     E[Y_1^x - Y_1^{x'} | Y_0 = y_0]
     $$ {#eq-CTE-fu}\
     This estimand represents the effect of treatment on the part of the follow-up outcome that hasn't already been determined by the baseline value.
 
-5.  The conditional treatment effect on the change score, conditioned on the observed baseline value $Y_0$:\
+4.  The conditional treatment effect on the change score, conditioned on the observed baseline value $Y_0$:\
     $$
     E[(Y_1^x - Y_0^x) - (Y_1^{x'} - Y_0^{x'}) | Y_0 = y_0]
     $$ {#eq-CTE-cs}\
@@ -134,7 +147,7 @@ tidy_dagMod1$data$status <- with(tidy_dagMod1$data, case_when(
 ))
 
 ggdag(tidy_dagMod1) +
-  geom_dag_node(aes(color = status), size = 15) +
+  geom_dag_point(aes(color = status), size = 15) +
   geom_dag_text(aes(label = math_label), parse = TRUE, size = 3.5, color = "white") +
   geom_dag_edges(aes(xend = xend, yend = yend)) +
   scale_color_manual(
@@ -153,11 +166,13 @@ ggdag(tidy_dagMod1) +
 
 The DAG uses common sense names instead of the typical variables used in potential outcomes:
 
-$Y_0$: `baseline`
+$Y_0$: Baseline value
 
-$Y_1$: `time1` or `change1` depending on which outcome we are interested in
+$Y_1$: Follow-up value
 
-$X$: `group` where 0 is control and 1 is treatment
+$\Delta Y$: Change score
+
+$X$: Treatment indicator where $X=0$ is control and $X=1$ is treatment
 
 `L`: A binary prognostic factor that increases `time1` by 10 when $L = 1$. Depending on what we wish to demonstrate we may treat L as measured or unmeasured.
 

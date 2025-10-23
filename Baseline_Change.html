@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.7.32">
+<meta name="generator" content="quarto-1.6.42">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -22,9 +22,8 @@ ul.task-list li input[type="checkbox"] {
   vertical-align: middle;
 }
 /* CSS for syntax highlighting */
-html { -webkit-text-size-adjust: 100%; }
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span { line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -35,7 +34,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
   { counter-reset: source-line 0; }
@@ -80,28 +79,27 @@ div.csl-indent {
 
 
 <script src="Baseline_Change_files/libs/clipboard/clipboard.min.js"></script>
-<script src="Baseline_Change_files/libs/quarto-html/quarto.js" type="module"></script>
-<script src="Baseline_Change_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="Baseline_Change_files/libs/quarto-html/quarto.js"></script>
 <script src="Baseline_Change_files/libs/quarto-html/popper.min.js"></script>
 <script src="Baseline_Change_files/libs/quarto-html/tippy.umd.min.js"></script>
 <script src="Baseline_Change_files/libs/quarto-html/anchor.min.js"></script>
 <link href="Baseline_Change_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="Baseline_Change_files/libs/quarto-html/quarto-syntax-highlighting-234273d1456647dabc34a594ac50e507.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="Baseline_Change_files/libs/quarto-html/quarto-syntax-highlighting-de84f8d6bb715db06a919283c2d1e787.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="Baseline_Change_files/libs/bootstrap/bootstrap.min.js"></script>
 <link href="Baseline_Change_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="Baseline_Change_files/libs/bootstrap/bootstrap-660c36b4044096ac0dd24a9e575ec680.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="Baseline_Change_files/libs/bootstrap/bootstrap-392fc53972752023497b692015611c91.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script src="Baseline_Change_files/libs/kePrint-0.0.1/kePrint.js"></script>
 <link href="Baseline_Change_files/libs/lightable-0.0.1/lightable.css" rel="stylesheet">
 <link href="Baseline_Change_files/libs/htmltools-fill-0.5.8.1/fill.css" rel="stylesheet">
 <script src="Baseline_Change_files/libs/htmlwidgets-1.6.4/htmlwidgets.js"></script>
 <link href="Baseline_Change_files/libs/datatables-css-0.0.0/datatables-crosstalk.css" rel="stylesheet">
-<script src="Baseline_Change_files/libs/datatables-binding-0.34.0/datatables.js"></script>
+<script src="Baseline_Change_files/libs/datatables-binding-0.33/datatables.js"></script>
 <script src="Baseline_Change_files/libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <link href="Baseline_Change_files/libs/dt-core-1.13.6/css/jquery.dataTables.min.css" rel="stylesheet">
 <link href="Baseline_Change_files/libs/dt-core-1.13.6/css/jquery.dataTables.extra.css" rel="stylesheet">
 <script src="Baseline_Change_files/libs/dt-core-1.13.6/js/jquery.dataTables.min.js"></script>
-<link href="Baseline_Change_files/libs/crosstalk-1.2.2/css/crosstalk.min.css" rel="stylesheet">
-<script src="Baseline_Change_files/libs/crosstalk-1.2.2/js/crosstalk.min.js"></script>
+<link href="Baseline_Change_files/libs/crosstalk-1.2.1/css/crosstalk.min.css" rel="stylesheet">
+<script src="Baseline_Change_files/libs/crosstalk-1.2.1/js/crosstalk.min.js"></script>
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
@@ -135,7 +133,7 @@ window.Quarto = {
 
 </head>
 
-<body class="quarto-light">
+<body>
 
 <div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
 <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
@@ -227,27 +225,42 @@ Construction Zone
 <p>This is a work in progress and subject to change nearly daily. At this stage there are numerous inconsistencies as I work to create a single simulated dataset that demonstrates the desired issues at hand while analyzing change from baseline.</p>
 </div>
 </div>
-<p>The goal of this notebook is to demonstrate how to estimate treatment effects of a dichotomous (binary) treatment on change from a continuous baseline measure in both experimental and observational designs. For example, suppose we want to estimate the effect of a new drug vs.&nbsp;placebo for reducing blood pressure after 6 months of use. Here, the blood pressure at treatment assignment is the baseline value and blood pressure measured 6 months after treatment assignment is the follow-up measure.</p>
-<p>There are two common approaches to defining the outcome: (1) Compare the difference in the follow-up measures between the experimental and control group; or (2) Compare the difference in change scores between the two groups, where a change score for an individual is the difference between the follow-up blood pressure and the baseline blood pressure.</p>
-<p>In this notebook we use the standard notation from the potential outcomes approach to refer the variables. This matches the notation used in the change score analysis in <span class="citation" data-cites="tennant2021">(<a href="#ref-tennant2021" role="doc-biblioref">Tennant et al. 2021</a>)</span>.</p>
+<p>The goal of this notebook is to demonstrate how to estimate treatment effects of a dichotomous (binary) treatment on change from a continuous baseline measure in both experimental and observational designs. For example, suppose we want to estimate the effect of a new drug vs.&nbsp;placebo for reducing blood pressure after 6 months of use. Here, the blood pressure at treatment assignment is the baseline value, which we will denote as <span class="math inline">\(Y_0\)</span>, and blood pressure measured 6 months after treatment assignment is the follow-up measure, denoted <span class="math inline">\(Y_1\)</span>.</p>
+<p>There are two common approaches to defining the outcome: (1) Compare the difference in the follow-up measures between the experimental and control group; or (2) Compare the difference in change scores between the two groups, where a change score, <span class="math inline">\(\Delta Y\)</span>, for an individual is the difference between the follow-up blood pressure and the baseline blood pressure: <span class="math inline">\(\Delta Y = Y_1 - Y_0\)</span></p>
+<p>In this notebook we use the notation from the potential outcomes approach to causal inference to refer to the variables of interest:</p>
+<p>ddd</p>
+<p><span class="math display">\[
+\begin{align}
+Y_0   &amp; \text{Baseline value}\\
+Y_1 &amp; Followup value\\
+time1^1 &amp;= baseline + 10L + 10 \\
+change1^0 &amp;= time1^0 - baseline \\
+          &amp;= (baseline + 10L) - baseline \\
+          &amp;= 10L \\
+change1^1 &amp;= time1^1 - baseline \\
+          &amp;= (baseline + 10L + 10) - baseline \\
+          &amp;= 10L + 10
+\end{align}
+\]</span></p>
 <p>We will use five increasingly complex data generating models to explore this problem:</p>
 <ol type="1">
 <li>A model where the potential outcomes (the outcome measure under both treatment and control) are known for all participants.</li>
 <li>A Randomized Controlled Trial (RCT) with no loss to follow-up.</li>
 <li>An RCT with differential loss to follow-up.</li>
 <li>An observational study with treatment assignment confounding</li>
-<li>An observational study with treatment assignment counfounding and loss to follow-up.</li>
+<li>An observational study with treatment assignment confounding and loss to follow-up.</li>
 </ol>
 <p>We will also consider four causal estimands based on the two approaches discussed above:</p>
 <ol type="1">
 <li><p>The average treatment effect (ATE) on the outcome at follow-up, expressed as the difference between the follow-up measure under treatment vs.&nbsp;control:<br>
-<span id="eq-att-outcome"><span class="math display">\[\mathrm{E}(Y_1^x) - \mathrm{E}(Y_1^{x'}) \tag{1}\]</span></span></p></li>
-<li><p>Here, we use the potential outcomes notation, where <span class="math inline">\(Y_1\)</span> is the follow-up outcome, <span class="math inline">\(x\)</span> is the treatment, and <span class="math inline">\(x'\)</span> is the control. <span class="math inline">\(Y_1^x\)</span> represents the value that a participant would have if treated. Hence this effect estimate is the difference between the expected outcome if all patients in the study were treated and the expected outcome if all patients were not treated.</p></li>
-<li><p>The average treatment effect on the change score:<br>
+<span id="eq-att-outcome"><span class="math display">\[\mathrm{E}(Y_1^x) - \mathrm{E}(Y_1^{x'}) \tag{1}\]</span></span></p>
+<p>Here, <span class="math inline">\(Y_1\)</span> is the follow-up outcome, <span class="math inline">\(x\)</span> is the treatment, and <span class="math inline">\(x'\)</span> is the control. <span class="math inline">\(Y_1^x\)</span> represents the value that a participant would have if treated, whereas <span class="math inline">\(Y_1^{x'}\)</span> represents the value that a participant would have if untreated. Hence this effect estimate is the difference between the expected outcome if <em>all</em> patients in the study were treated and the expected outcome if <em>all</em> patients were not treated.</p></li>
+<li><p>The average treatment effect on the change score:</p>
+<p><span class="math display">\[E(\Delta Y^x) - E(\Delta Y^{x'})\]</span><br>
+This is the difference between the expected value of the change score if all patients had been treated <span class="math inline">\(Y_1^x\)</span> and the expected value if all patients had been untreated <span class="math inline">\(Y_1^{x'}\)</span>. We can expand this equation to:<br>
 <span id="eq-att-changescore"><span class="math display">\[
 \mathrm{E}(Y_1^x - Y_0^x) - \mathrm{E}(Y_1^{x'} - Y_0^{x'})
-\tag{2}\]</span></span><br>
-This is the difference between the change score <span class="math inline">\(Y_1 - Y_0\)</span> under treatment vs.&nbsp;control, where <span class="math inline">\(Y_0\)</span> is the baseline score.</p></li>
+\tag{2}\]</span></span></p></li>
 <li><p>The conditional treatment effect on the follow-up outcome, conditioned on the observed baseline value <span class="math inline">\(Y_0\)</span>:<br>
 <span id="eq-CTE-fu"><span class="math display">\[
 E[Y_1^x - Y_1^{x'} | Y_0 = y_0]
@@ -318,7 +331,7 @@ Estimands vs Estimators
 <span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>))</span>
 <span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a><span class="fu">ggdag</span>(tidy_dagMod1) <span class="sc">+</span></span>
-<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_dag_node</span>(<span class="fu">aes</span>(<span class="at">color =</span> status), <span class="at">size =</span> <span class="dv">15</span>) <span class="sc">+</span></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_dag_point</span>(<span class="fu">aes</span>(<span class="at">color =</span> status), <span class="at">size =</span> <span class="dv">15</span>) <span class="sc">+</span></span>
 <span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_dag_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> math_label), <span class="at">parse =</span> <span class="cn">TRUE</span>, <span class="at">size =</span> <span class="fl">3.5</span>, <span class="at">color =</span> <span class="st">"white"</span>) <span class="sc">+</span></span>
 <span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_dag_edges</span>(<span class="fu">aes</span>(<span class="at">xend =</span> xend, <span class="at">yend =</span> yend)) <span class="sc">+</span></span>
 <span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(</span>
@@ -342,9 +355,10 @@ Estimands vs Estimators
 </div>
 </div>
 <p>The DAG uses common sense names instead of the typical variables used in potential outcomes:</p>
-<p><span class="math inline">\(Y_0\)</span>: <code>baseline</code></p>
-<p><span class="math inline">\(Y_1\)</span>: <code>time1</code> or <code>change1</code> depending on which outcome we are interested in</p>
-<p><span class="math inline">\(X\)</span>: <code>group</code> where 0 is control and 1 is treatment</p>
+<p><span class="math inline">\(Y_0\)</span>: Baseline value</p>
+<p><span class="math inline">\(Y_1\)</span>: Follow-up value</p>
+<p><span class="math inline">\(\Delta Y\)</span>: Change score</p>
+<p><span class="math inline">\(X\)</span>: Treatment indicator where <span class="math inline">\(X=0\)</span> is control and <span class="math inline">\(X=1\)</span> is treatment</p>
 <p><code>L</code>: A binary prognostic factor that increases <code>time1</code> by 10 when <span class="math inline">\(L = 1\)</span>. Depending on what we wish to demonstrate we may treat L as measured or unmeasured.</p>
 <p>W: A (binary) side-effect resulting from a combination of <code>L</code> and the treatment, <code>group</code>. W is more likely when L=1 and when treated <code>group = treated</code>. We will use <code>W</code> later to model loss to follow-up.</p>
 <p>Now let’s simulate potential outcomes for the causal DAG shown above. In this simulation, the causal effect of treatment on <code>time1</code> is 10, meaning that treated patients will see their baseline score increase by 10 plus a random amount of normally distributed noise with mean 0 and standard deviation of 3 (<span class="math inline">\(\mu = 0\)</span>, <span class="math inline">\(\sigma = 3\)</span>), whereas control will see only the random change. The simulation calculates the potential outcomes <code>time1_x0</code> and <code>time1_x1</code> for all participants, where <code>x1</code> is the outcome under treatment, and <code>x0</code> under control. Likewise, the simulation also calculates potential outcomes of the change score: <code>change1_x0</code>, and <code>change1_x1</code>.</p>
@@ -589,6 +603,8 @@ change1^1 &amp;= time1^1 - baseline \\
 </tbody>
 </table>
 </div>
+
+
 </div>
 </div>
 <pre><code></code></pre>
@@ -1817,7 +1833,7 @@ Technical Note
 <span id="cb15-28"><a href="#cb15-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">formatRound</span>(<span class="at">columns =</span> real_cols, <span class="at">digits =</span> <span class="dv">2</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div class="datatables html-widget html-fill-item" id="htmlwidget-aee89da29aa61278f0da" style="width:100%;height:auto;"></div>
-<script type="application/json" data-for="htmlwidget-aee89da29aa61278f0da">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79","80","81","82","83","84","85","86","87","88","89","90","91","92","93","94","95","96","97","98","99","100","101","102","103","104","105","106","107","108","109","110","111","112","113","114","115","116","117","118","119","120","121","122","123","124","125","126","127","128","129","130","131","132","133","134","135","136","137","138","139","140","141","142","143","144","145","146","147","148","149","150","151","152","153","154","155","156","157","158","159","160","161","162","163","164","165","166","167","168","169","170","171","172","173","174","175","176","177","178","179","180","181","182","183","184","185","186","187","188","189","190","191","192","193","194","195","196","197","198","199","200","201","202","203","204","205","206","207","208","209","210","211","212","213","214","215","216","217","218","219","220","221","222","223","224","225","226","227","228","229","230","231","232","233","234","235","236","237","238","239","240","241","242","243","244","245","246","247","248","249","250","251","252","253","254","255","256","257","258","259","260","261","262","263","264","265","266","267","268","269","270","271","272","273","274","275","276","277","278","279","280","281","282","283","284","285","286","287","288","289","290","291","292","293","294","295","296","297","298","299","300"],[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255,256,257,258,259,260,261,262,263,264,265,266,267,268,269,270,271,272,273,274,275,276,277,278,279,280,281,282,283,284,285,286,287,288,289,290,291,292,293,294,295,296,297,298,299,300],["Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment"],[36.14929381405619,50.38323181021901,42.36969837638026,52.12306135525839,64.25537966867792,57.44479822333977,57.0022940298623,47.70645386548274,51.97093861895352,62.07153773872256,53.18336726424769,35.76201146372445,45.94909141950813,59.95386565684022,59.58817787640258,59.18087896319951,48.4903039811839,37.76931211133796,41.31175711362206,39.57514635095707,38.96362216933129,54.44185061636591,47.95049387752277,66.75632433148326,48.6867775006957,48.00117022068815,50.54912415432123,43.17834511454831,42.72295851857338,41.38095714059663,49.62476885005964,33.68576759763806,51.7716659588745,49.87499200921824,46.05682873574104,53.51562931221,58.78767562719921,52.04654080230588,41.12619289608275,45.22783941705452,47.32259046645307,65.85859163151743,50.46900594697962,53.56496777244958,48.78619994679629,49.63908157900605,40.18852513273207,45.65740172347076,49.32515644708256,59.81894565963953,45.37947608705008,47.74900717356022,41.53552199738109,50.7304631935885,47.24963580453851,46.13573642741976,49.5379685855967,41.74106278163622,41.45965762254298,51.18736809402656,52.83596905517313,69.30086466248267,38.5947238195217,36.77881757133584,62.28831605394996,44.51543967644129,48.73992507865754,56.87718721631207,57.05200375971499,58.01478429090865,45.37116820836361,41.15445015899184,33.69072426579969,55.62230587919655,46.74108165373376,52.4137562009856,60.85869099457268,69.07061614660081,58.12927449301863,54.94888787113184,49.0485223648262,61.38780499501301,55.02314628861913,44.84585945975069,25.3160953291529,41.27447256274069,59.64088079895252,59.10796248707817,69.25808837446685,46.97093052078707,39.45292949887301,54.18116085183897,57.01272821932616,52.46758282351839,54.64295161386731,46.04531812298992,57.13070305154748,61.85012556327626,30.88850711896562,61.1493056406232,45.30699793747331,38.51997246608669,61.03997956657752,47.10750083048118,47.22671378990475,41.24217361194295,50.03279151814386,52.65591625375043,48.75975868342836,48.71074094413365,52.99112314061662,50.18299211822657,38.49938669161833,45.70603652970917,58.50002976678223,47.85170508156627,43.82585983946465,51.09427384034174,42.93488936081676,65.4297581655436,53.50801720173732,61.72620574095716,49.66626469488467,53.61443995656251,60.45575638501892,51.03212392415602,53.31795557645036,34.3144118526109,54.4026994419263,68.81871322324494,63.49106265191624,33.64917228422103,42.84467267827526,40.83505677118566,26.38973055324857,65.2845000149248,43.70212776144518,39.31907978582351,62.44859824206127,54.59876146065523,51.6770582831924,47.24996977390859,54.92322618045394,63.3975457108875,45.23255775698019,35.03204463451998,37.98576029350947,45.92538971792439,40.5225190465432,58.51666398410158,44.11568990824565,36.37526896300598,45.50362057768714,43.56674968480772,44.89254448232852,52.57202011122628,45.80444552085349,40.47772344732737,55.12393405084998,32.55732314907633,45.02487588436336,57.65585781347507,55.01393067439787,53.31911170937492,49.08924266392871,43.43317967138967,38.3915186135161,66.55931933977728,42.50789452354221,56.21920555129349,35.28194831105371,57.98195456833738,52.79462509048334,56.57874259006883,55.93726323428363,44.22073486485611,54.76062734283654,38.12366381478774,57.17688045345253,51.34697244982783,64.22080340099731,50.40730913174645,46.61590249041397,44.41884611890936,60.27813483187612,47.74529521440576,37.68369948992151,42.41755258675419,60.85518148590043,39.50901115040758,52.90399552585063,45.52426573749637,47.81139233568976,33.94556487532307,50.74839685864259,44.78081300615621,49.35097631015117,60.51369968160878,32.57841736620913,67.32548028053486,66.33529146630525,46.23350301993051,48.33761782242891,49.67847720117289,55.13153461953697,62.68227344845782,39.39717349120485,56.19662622900344,41.80371800242414,45.1225736117761,49.08914560769864,53.07927349104315,46.25116025878074,42.12143320854028,39.83660478065678,23.74981162702059,47.70167890739615,47.34082641061702,53.63816746402787,51.15686261113198,57.57306617131614,65.15312869004883,23.40216147265433,43.11819960286481,45.73421352326399,45.7379455730205,51.48303276161564,75.2780944256064,48.56599912048453,60.33067642842455,46.42135106729953,57.57721814164156,72.98742696710252,49.24429904580779,78.61248462681476,35.9120996978082,50.76437759432179,32.26790901736499,47.89471911666624,46.96212360028419,43.88178137323153,48.595790492821,51.21357441020462,57.33706176135357,72.26098690551109,55.76791991453375,51.64509488860185,57.94891931461422,60.37596356530344,35.47323304146662,54.94162682389708,41.69180186961653,58.07987311172387,52.09410135862353,47.2243180268859,35.31747194684145,54.97323081443179,51.46437596257194,56.41591724319034,50.68976155877001,50.18530770025512,47.29577237000203,47.67644342555437,40.52101576696463,52.73739678808087,49.30302964760823,45.55337104792243,50.3876954394501,46.85435948036586,68.72851822334009,36.10664488957531,56.97209011654988,38.38070410833876,40.72258789606906,52.93841101225392,52.05472840973339,53.96421920675468,48.25053007680398,41.33957337884311,42.4865158406591,33.40193749764302,25.36888340357655,59.97359361448905,62.01242166717741,29.11025743288597,60.02769194354316,47.98969813314631,54.03656592561168,52.88365089858286,50.01630428583109,43.27685594790911,58.80851960643017,43.88352776425214,39.71129875399307,69.6628841835207,37.28370333193057,50.9305123964543,53.07061492790035,50.09532613018018,43.0463076583193],[0,0,1,1,1,0,1,1,0,0,0,1,0,1,0,1,0,0,0,1,1,1,0,1,0,1,0,1,1,1,1,1,0,0,1,0,0,1,0,1,1,0,1,0,1,0,0,0,0,0,0,1,1,1,0,0,0,0,1,1,0,1,0,1,1,0,0,1,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,1,0,1,0,1,1,1,0,0,0,0,1,1,0,1,0,0,1,1,0,1,0,0,0,1,0,1,0,0,1,0,0,0,1,0,1,1,0,0,0,1,0,0,0,1,0,1,1,0,0,0,0,0,0,1,1,1,0,0,1,1,1,0,0,1,1,0,0,0,0,0,1,1,0,0,0,1,0,0,0,0,0,0,0,1,1,0,1,0,1,1,1,0,0,0,1,0,1,0,1,0,0,0,0,0,1,0,1,0,1,0,0,1,1,0,1,0,0,1,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,1,0,1,0,1,0,1,0,0,1,0,0,1,0,1,0,1,1,0,0,0,1,0,1,0,0,0,0,1,1,0,1,0,1,0,0,0,0,1,1,0,0,0,0,1,0,0,1,1,0,1,1,0,1,0,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0],[1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,1,1,1,0,1,1,1,0,1,1,0,0,1,0,0,0,0,1,0,0,1,0,0,0,0,1,1,0,1,0,1,1,0,0,0,0,1,1,1,0,1,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,0,1,0,0,0,0,1,1,0,1,1,0,1,0,0,1,0,0,0,1,0,1,0,1,0,1,0,0,1,0,0,1,1,1,0,1,0,0,0,1,1,0,1,0,0,0,0,1,1,0,1,0,1,0,0,1,0,1,1,1,0,1,0,1,1,0,1,1,0,1,1,1,1,0,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0],[40.38211356467971,49.84070412957139,50.50685015713741,57.68750270352605,71.97558644130342,56.99671879688008,68.11299794575932,55.23022155022043,47.59753902374614,56.82165170607462,55.20010616407872,48.39352020862756,44.9183703916855,76.51157016016531,62.78886463050399,68.24879288687006,47.07602267035691,37.15900294146822,42.22873968752837,51.86137902751464,55.2758803268961,60.87037097362094,51.42545545623985,75.69301688148403,53.12226371252297,55.02968160431379,48.22258209631934,57.18130555122247,51.65349570026168,46.98300354660564,59.55642521288785,45.49836538592319,49.24456423310385,49.28052567680398,54.84604231290316,56.93158197701872,58.27615523110077,58.59052110751409,42.05741109664478,50.99167990291595,58.28550941782699,63.64051223024116,61.3702081066618,50.80206531101445,57.85800813498854,46.6181370853427,36.51188777932258,43.12190094566483,50.07541805897241,59.33362409128523,43.81639391318527,57.58707985308614,57.11635652687288,61.22770555188756,49.65772637896067,44.04832098585211,46.91461148768237,41.23247845581377,52.92968160654831,56.8887259136208,52.67263476203065,77.65427412483737,39.55862239197136,44.76666790192215,71.76983414707719,44.78473294866019,47.0440985895218,68.97733501029698,56.78606976684922,65.78727006355537,59.1657560662578,46.50363755616914,30.09973741259138,57.66746375766488,51.30610294478829,49.57805174756857,63.3695646482278,67.62868493299079,63.04954119808218,50.92844714190318,47.04395298274837,61.62134441251572,53.23457115233669,43.19793621433612,28.01386994923953,39.09266878717504,67.66856746052292,57.13798686963181,80.24094904283963,45.81019671565407,41.69536156294196,51.62110890779861,65.19399377579843,56.26000148022457,66.2690353404048,46.4888132851458,63.32985136007796,73.21675590838127,37.88849389265866,59.92010089583398,45.67684112632631,36.63768363455331,59.72359990232016,51.90700359122469,54.84239247692112,38.57339812367009,60.5862643103599,53.17624644316051,50.28765321737053,58.04023529475118,64.51115863443904,47.97697604033965,46.75053114942048,45.73725456934758,59.60904373762602,47.38370223853746,52.80598915029405,53.80323184759187,51.87632515163446,62.24980414573297,53.1942504921529,69.84438320420261,50.49101225217508,50.10996164988721,56.17907497775814,65.67651197667568,57.25263421259101,42.00774726301981,68.40525527902064,70.8377108741188,66.68083788345444,37.07127287627847,53.29216668052062,41.16724729157433,25.24693676697624,65.32598072458424,56.18226779525685,38.19543987400169,75.73974264855765,66.70277883725163,50.95113997539189,48.73997751369092,52.23901581923854,64.34270365048481,42.17031173266687,33.36629415381235,49.82236682683638,59.34506983170694,56.23366105995289,52.01799322081952,54.21446044805766,53.31090603896278,59.34899287930546,60.52996612452182,53.12295917218296,65.83323955722079,69.60641587482691,60.94842828937204,61.39477252506994,42.3812766768887,58.97216910202213,67.48305728708394,65.96371020180659,73.08233121800717,63.52661870905184,58.59622450420859,49.85174856197451,74.09567815016651,62.26404932113083,65.70078514806229,45.58116478518225,69.70929367593392,62.13682775897199,64.41357281431024,67.21509091354353,58.91335780758905,70.80607936798465,57.97111095573668,68.93920356884789,72.72086611560978,72.06593555809631,68.52265616532883,64.50341414566169,63.77932485395809,69.74577821030395,60.22770987441916,41.54504502305272,58.74959390724381,69.9697973456433,55.15837913273658,61.5590664106109,62.7435674611177,57.84829989024795,43.48926289508962,64.01003800281796,53.03282944430793,63.33811722292005,86.77509456226693,41.00187311766932,82.55277217993218,74.53179437517646,67.1694243014875,62.08453306970934,59.03902782709866,77.62908675623393,83.37888427743535,43.58619392029016,76.79263993917033,54.71680558463373,52.49483072358295,67.53080748563785,65.50455469960345,59.39029503764276,52.08984114901617,54.18821883420831,36.80647953705467,55.94108822499661,67.15732166138866,73.52270208651696,57.443759761548,62.06951716403819,84.6480186190208,31.3432416933938,54.25946347256505,54.10262086246304,59.44572374966636,62.70645773350376,91.46258632810384,59.56542840505623,68.77226852086378,62.98291481383406,67.12519996997766,95.74726421624118,58.51370655834725,100.9612517274452,44.07401603249153,68.64669065330025,40.147082395877,56.90666917035701,66.04292679643241,50.63757997710284,54.40914319434523,66.94403122654811,72.64732124467123,87.1400214617242,65.44104659852825,73.85707873770177,79.41571955057594,65.64237868986717,46.40063434173724,67.04703215515003,61.83820478688788,66.32097388725504,76.04321037936646,55.01184734523079,41.38744621242575,58.32082295297175,60.63088538655724,78.97670743380399,68.4951375567808,64.92774760750001,71.90923171603733,62.48236959783925,61.52846510220525,62.00068867898397,63.34091551149953,54.95223645106879,59.3677360483773,68.15186374149397,92.65311899225109,50.21293647127288,74.2098749312653,49.68164626577624,46.64399384432546,68.90805643915068,67.34053961736267,63.2842490681212,70.09128734372804,66.88974654234269,53.69996077237762,45.8587529774576,44.51848735730785,77.93660044668196,85.98862478562268,34.63919770439487,69.37498538931085,59.92922622209487,68.12619961011443,61.95544196481865,70.77651929950618,49.27529066568665,68.18151034369448,53.91128462492845,58.03236459157186,85.45909000237447,54.31354837007105,62.89120100794056,71.83608296850889,61.36669485340646,53.25139506212656],[4.232819750623513,-0.5425276806476234,8.137151780757151,5.564441348267664,7.720206772625502,-0.4480794264596852,11.11070391589702,7.523767684737699,-4.373399595207381,-5.249886032647943,2.016738899831026,12.63150874490312,-1.030721027822629,16.55770450332508,3.200686754101419,9.067913923670552,-1.414281310826986,-0.6103091698697369,0.91698257390631,12.28623267655757,16.31225815756481,6.428520357255024,3.474961578717078,8.936692550000771,4.435486211827261,7.028511383625649,-2.326542058001898,14.00296043667415,8.930537181688301,5.602046406009009,9.931656362828214,11.81259778828513,-2.527101725770649,-0.5944663324142567,8.789213577162116,3.415952664808721,-0.5115203960984402,6.543980305208208,0.9312182005620286,5.763840485861429,10.96291895137392,-2.21807940127627,10.90120215968218,-2.762902461435139,9.07180818819225,-3.02094449366335,-3.676637353409483,-2.535500777805922,0.7502616118898473,-0.4853215683543013,-1.563082173864807,9.838072679525922,15.58083452949179,10.49724235829906,2.408090574422161,-2.087415441567657,-2.623357097914329,-0.5085843258224472,11.47002398400534,5.701357819594236,-0.1633342931424764,8.353409462354705,0.9638985724496578,7.987850330586305,9.481518093127228,0.2692932722189028,-1.69582648913574,12.10014779398492,-0.2659339928657687,7.772485772646718,13.79458785789419,5.349187397177296,-3.59098685320831,2.045157878468324,4.565021291054535,-2.83570445341703,2.510873653655125,-1.441931213610019,4.920266705063547,-4.020440729228667,-2.004569382077833,0.2335394175027119,-1.788575136282439,-1.647923245414574,2.69777462008663,-2.181803775565648,8.027686661570399,-1.969975617446359,10.98286066837278,-1.160733805132999,2.24243206406895,-2.560051944040353,8.181265556472276,3.792418656706175,11.62608372653749,0.4434951621558838,6.199148308530475,11.36663034510502,6.999986773693038,-1.229204744789222,0.3698431888530038,-1.88228883153338,-1.316379664257362,4.799502760743515,7.61567868701637,-2.668775488272864,10.55347279221604,0.5203301894100818,1.527894533942167,9.32949435061753,11.52003549382242,-2.206016077886915,8.251144457802148,0.03121803963841785,1.10901397084379,-0.4680028430288132,8.980129310829398,2.708958007250125,8.9414357908177,-3.179954019810637,-0.3137667095844208,8.118177463245459,0.8247475572904008,-3.504478306675303,-4.276681407260781,14.64438805251967,3.934678636140653,7.693335410408906,14.00255583709433,2.018997650873857,3.189775231538199,3.42210059205744,10.44749400224536,0.3321905203886786,-1.142793786272332,0.04148070965943873,12.48014003381167,-1.123639911821826,13.29114440649638,12.1040173765964,-0.7259183078005123,1.490007739782328,-2.684210361215399,0.9451579395973084,-3.062246024313318,-1.665750480707622,11.83660653332691,13.41968011378255,15.7111420134097,-6.498670763282057,10.09877053981202,16.9356370759568,13.84537230161831,16.9632164397141,8.230414689854435,13.26121944599451,23.80197035397342,20.47070484204467,6.270838474219957,9.823953527812371,13.94729321765877,9.827199473608864,10.94977952740872,19.76321950863225,14.43737604512313,15.16304483281893,11.46022994845841,7.536358810389231,19.75615479758862,9.481579596768803,10.29921647412854,11.72733910759654,9.342202668488653,7.834830224241408,11.2778276792599,14.69262294273295,16.04545202514812,19.84744714094894,11.76232311539535,21.37389366578195,7.845132157099002,18.11534703358237,17.88751165524773,19.36047873504872,9.467643378427837,12.4824146600134,3.861345533131214,16.33204132048962,9.114615859742869,15.649367982329,8.655070884760278,17.21930172362133,10.03690755455819,9.543698019766545,13.26164114417538,8.25201643815172,13.98714091276889,26.26139488065814,8.423455751460189,15.22729189939731,8.19650290887121,20.93592128155699,13.74691524728043,9.360550625925775,22.49755213669696,20.69661082897753,4.189020429085311,20.59601371016689,12.91308758220959,7.372257111806846,18.44166187793921,12.4252812085603,13.13913477886202,9.968407940475892,14.35161405355152,13.05666791003408,8.239409317600455,19.81649525077164,19.88453462248909,6.286897150416017,4.496450992722046,19.49488992897197,7.941080220739462,11.14126386970024,8.368407339199052,13.70777817664587,11.22342497188812,16.18449190249744,10.9994292845717,8.441592092439222,16.56156374653452,9.547981828336098,22.75983724913866,9.269407512539466,22.34876710063047,8.161916334683326,17.88231305897847,7.879173378512007,9.011950053690768,19.08080319614822,6.755798603871305,5.813352701524231,15.73045681634348,15.31025948331766,14.87903455621311,9.673126683994496,22.21198384909992,21.46680023596172,5.266415124563736,10.92740130027062,12.10540533125295,20.14640291727135,8.241100775531166,23.94910902074293,7.787529318344895,6.0699742655843,3.347592138539966,9.166509423985296,22.56079019061365,17.8053759980108,14.74243990724489,24.61345934603529,14.80592617228488,21.00744933524062,9.263291890903098,14.0378858638913,9.398865403146353,8.980040608927197,21.2975042611281,23.92460076891101,14.10629158169757,17.23778481471543,11.30094215743748,5.9214059482564,15.96964542689676,15.28581120762927,9.320029861366521,21.84075726692406,25.55017316349958,11.21344493171852,12.45681547981458,19.1496039537313,17.96300683219291,23.97620311844527,5.528940271508898,9.34729344576769,11.93952808894856,14.08963368450275,9.071791066235789,20.76021501367509,5.998434717777542,9.372990737264317,10.02775686067631,18.32106583757879,15.79620581885376,17.02984503814047,11.96068861148626,18.76546804060854,11.27136872322628,10.20508740380726]],"container":"<table class=\"display compact stripe\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>id<\/th>\n      <th>group<\/th>\n      <th>baseline<\/th>\n      <th>L<\/th>\n      <th>W<\/th>\n      <th>time1<\/th>\n      <th>change1<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":10,"columnDefs":[{"targets":3,"render":"function(data, type, row, meta) {\n    return type !== 'display' ? data : DTWidget.formatRound(data, 2, 3, \",\", \".\", null);\n  }"},{"targets":6,"render":"function(data, type, row, meta) {\n    return type !== 'display' ? data : DTWidget.formatRound(data, 2, 3, \",\", \".\", null);\n  }"},{"targets":7,"render":"function(data, type, row, meta) {\n    return type !== 'display' ? data : DTWidget.formatRound(data, 2, 3, \",\", \".\", null);\n  }"},{"className":"dt-right","targets":[1,3,4,5,6,7]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"id","targets":1},{"name":"group","targets":2},{"name":"baseline","targets":3},{"name":"L","targets":4},{"name":"W","targets":5},{"name":"time1","targets":6},{"name":"change1","targets":7}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":["options.columnDefs.0.render","options.columnDefs.1.render","options.columnDefs.2.render"],"jsHooks":[]}</script>
+<script type="application/json" data-for="htmlwidget-aee89da29aa61278f0da">{"x":{"filter":"none","vertical":false,"data":[["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36","37","38","39","40","41","42","43","44","45","46","47","48","49","50","51","52","53","54","55","56","57","58","59","60","61","62","63","64","65","66","67","68","69","70","71","72","73","74","75","76","77","78","79","80","81","82","83","84","85","86","87","88","89","90","91","92","93","94","95","96","97","98","99","100","101","102","103","104","105","106","107","108","109","110","111","112","113","114","115","116","117","118","119","120","121","122","123","124","125","126","127","128","129","130","131","132","133","134","135","136","137","138","139","140","141","142","143","144","145","146","147","148","149","150","151","152","153","154","155","156","157","158","159","160","161","162","163","164","165","166","167","168","169","170","171","172","173","174","175","176","177","178","179","180","181","182","183","184","185","186","187","188","189","190","191","192","193","194","195","196","197","198","199","200","201","202","203","204","205","206","207","208","209","210","211","212","213","214","215","216","217","218","219","220","221","222","223","224","225","226","227","228","229","230","231","232","233","234","235","236","237","238","239","240","241","242","243","244","245","246","247","248","249","250","251","252","253","254","255","256","257","258","259","260","261","262","263","264","265","266","267","268","269","270","271","272","273","274","275","276","277","278","279","280","281","282","283","284","285","286","287","288","289","290","291","292","293","294","295","296","297","298","299","300"],[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255,256,257,258,259,260,261,262,263,264,265,266,267,268,269,270,271,272,273,274,275,276,277,278,279,280,281,282,283,284,285,286,287,288,289,290,291,292,293,294,295,296,297,298,299,300],["Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Control","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment","Treatment"],[36.1492938140562,50.38323181021901,42.36969837638026,52.12306135525839,64.25537966867792,57.44479822333976,57.0022940298623,47.70645386548274,51.97093861895352,62.07153773872257,53.18336726424769,35.76201146372445,45.94909141950813,59.95386565684022,59.58817787640257,59.1808789631995,48.4903039811839,37.76931211133796,41.31175711362206,39.57514635095707,38.9636221693313,54.44185061636591,47.95049387752277,66.75632433148326,48.6867775006957,48.00117022068815,50.54912415432123,43.17834511454831,42.72295851857338,41.38095714059664,49.62476885005964,33.68576759763806,51.7716659588745,49.87499200921824,46.05682873574104,53.51562931221001,58.78767562719921,52.04654080230588,41.12619289608275,45.22783941705452,47.32259046645307,65.85859163151744,50.46900594697962,53.56496777244958,48.78619994679629,49.63908157900605,40.18852513273207,45.65740172347076,49.32515644708256,59.81894565963953,45.37947608705008,47.74900717356022,41.53552199738108,50.7304631935885,47.24963580453851,46.13573642741976,49.5379685855967,41.74106278163622,41.45965762254298,51.18736809402656,52.83596905517313,69.30086466248267,38.5947238195217,36.77881757133585,62.28831605394996,44.51543967644129,48.73992507865754,56.87718721631207,57.05200375971499,58.01478429090865,45.37116820836361,41.15445015899184,33.6907242657997,55.62230587919655,46.74108165373376,52.4137562009856,60.85869099457267,69.07061614660081,58.12927449301863,54.94888787113184,49.0485223648262,61.38780499501301,55.02314628861913,44.84585945975069,25.3160953291529,41.27447256274069,59.64088079895252,59.10796248707817,69.25808837446685,46.97093052078708,39.45292949887301,54.18116085183897,57.01272821932616,52.46758282351839,54.64295161386731,46.04531812298992,57.13070305154749,61.85012556327626,30.88850711896562,61.1493056406232,45.3069979374733,38.51997246608669,61.03997956657752,47.10750083048119,47.22671378990475,41.24217361194295,50.03279151814386,52.65591625375043,48.75975868342836,48.71074094413365,52.99112314061662,50.18299211822657,38.49938669161833,45.70603652970917,58.50002976678222,47.85170508156628,43.82585983946465,51.09427384034174,42.93488936081676,65.4297581655436,53.50801720173732,61.72620574095716,49.66626469488467,53.61443995656251,60.45575638501893,51.03212392415602,53.31795557645035,34.3144118526109,54.4026994419263,68.81871322324494,63.49106265191625,33.64917228422103,42.84467267827526,40.83505677118566,26.38973055324857,65.2845000149248,43.70212776144518,39.31907978582351,62.44859824206127,54.59876146065523,51.6770582831924,47.24996977390859,54.92322618045394,63.3975457108875,45.23255775698019,35.03204463451998,37.98576029350947,45.92538971792439,40.5225190465432,58.51666398410158,44.11568990824565,36.37526896300598,45.50362057768714,43.56674968480772,44.89254448232852,52.57202011122627,45.80444552085349,40.47772344732737,55.12393405084998,32.55732314907633,45.02487588436335,57.65585781347507,55.01393067439787,53.31911170937492,49.08924266392871,43.43317967138967,38.3915186135161,66.55931933977729,42.50789452354222,56.21920555129348,35.28194831105371,57.98195456833738,52.79462509048334,56.57874259006883,55.93726323428363,44.22073486485611,54.76062734283654,38.12366381478774,57.17688045345253,51.34697244982784,64.22080340099731,50.40730913174645,46.61590249041397,44.41884611890936,60.27813483187612,47.74529521440576,37.68369948992151,42.41755258675419,60.85518148590043,39.50901115040758,52.90399552585063,45.52426573749637,47.81139233568976,33.94556487532307,50.74839685864259,44.78081300615621,49.35097631015117,60.51369968160878,32.57841736620914,67.32548028053486,66.33529146630525,46.23350301993051,48.33761782242891,49.67847720117289,55.13153461953697,62.68227344845782,39.39717349120485,56.19662622900344,41.80371800242415,45.1225736117761,49.08914560769864,53.07927349104315,46.25116025878074,42.12143320854028,39.83660478065678,23.74981162702059,47.70167890739615,47.34082641061702,53.63816746402787,51.15686261113198,57.57306617131614,65.15312869004883,23.40216147265433,43.11819960286481,45.73421352326399,45.73794557302049,51.48303276161564,75.2780944256064,48.56599912048453,60.33067642842455,46.42135106729953,57.57721814164157,72.98742696710252,49.24429904580779,78.61248462681476,35.9120996978082,50.76437759432179,32.26790901736499,47.89471911666624,46.96212360028419,43.88178137323153,48.595790492821,51.21357441020462,57.33706176135357,72.26098690551109,55.76791991453375,51.64509488860185,57.94891931461422,60.37596356530344,35.47323304146662,54.94162682389707,41.69180186961653,58.07987311172386,52.09410135862353,47.2243180268859,35.31747194684145,54.97323081443179,51.46437596257194,56.41591724319034,50.68976155877001,50.18530770025512,47.29577237000203,47.67644342555437,40.52101576696463,52.73739678808087,49.30302964760823,45.55337104792243,50.3876954394501,46.85435948036586,68.72851822334007,36.10664488957531,56.97209011654988,38.38070410833875,40.72258789606906,52.93841101225392,52.05472840973339,53.96421920675468,48.25053007680398,41.33957337884311,42.4865158406591,33.40193749764302,25.36888340357655,59.97359361448905,62.01242166717741,29.11025743288597,60.02769194354316,47.98969813314631,54.03656592561168,52.88365089858286,50.01630428583109,43.27685594790911,58.80851960643017,43.88352776425214,39.71129875399307,69.6628841835207,37.28370333193058,50.9305123964543,53.07061492790035,50.09532613018018,43.0463076583193],[0,0,1,1,1,0,1,1,0,0,0,1,0,1,0,1,0,0,0,1,1,1,0,1,0,1,0,1,1,1,1,1,0,0,1,0,0,1,0,1,1,0,1,0,1,0,0,0,0,0,0,1,1,1,0,0,0,0,1,1,0,1,0,1,1,0,0,1,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,1,0,1,0,1,1,1,0,0,0,0,1,1,0,1,0,0,1,1,0,1,0,0,0,1,0,1,0,0,1,0,0,0,1,0,1,1,0,0,0,1,0,0,0,1,0,1,1,0,0,0,0,0,0,1,1,1,0,0,1,1,1,0,0,1,1,0,0,0,0,0,1,1,0,0,0,1,0,0,0,0,0,0,0,1,1,0,1,0,1,1,1,0,0,0,1,0,1,0,1,0,0,0,0,0,1,0,1,0,1,0,0,1,1,0,1,0,0,1,0,0,0,0,0,0,1,1,0,0,1,0,0,0,0,0,0,0,0,1,0,1,0,1,0,1,0,0,1,0,0,1,0,1,0,1,1,0,0,0,1,0,1,0,0,0,0,1,1,0,1,0,1,0,0,0,0,1,1,0,0,0,0,1,0,0,1,1,0,1,1,0,1,0,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0],[1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,1,1,1,0,1,1,1,0,1,1,0,0,1,0,0,0,0,1,0,0,1,0,0,0,0,1,1,0,1,0,1,1,0,0,0,0,1,1,1,0,1,0,1,0,0,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,0,1,0,0,0,0,1,1,0,1,1,0,1,0,0,1,0,0,0,1,0,1,0,1,0,1,0,0,1,0,0,1,1,1,0,1,0,0,0,1,1,0,1,0,0,0,0,1,1,0,1,0,1,0,0,1,0,1,1,1,0,1,0,1,1,0,1,1,0,1,1,1,1,0,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0],[40.38211356467971,49.84070412957139,50.50685015713741,57.68750270352605,71.97558644130342,56.99671879688007,68.11299794575932,55.23022155022043,47.59753902374614,56.82165170607463,55.20010616407872,48.39352020862756,44.9183703916855,76.51157016016532,62.78886463050399,68.24879288687005,47.07602267035691,37.15900294146822,42.22873968752837,51.86137902751464,55.27588032689611,60.87037097362094,51.42545545623985,75.69301688148404,53.12226371252297,55.02968160431379,48.22258209631934,57.18130555122247,51.65349570026168,46.98300354660564,59.55642521288785,45.49836538592319,49.24456423310386,49.28052567680398,54.84604231290316,56.93158197701873,58.27615523110077,58.59052110751409,42.05741109664478,50.99167990291595,58.28550941782699,63.64051223024117,61.3702081066618,50.80206531101445,57.85800813498854,46.6181370853427,36.51188777932258,43.12190094566483,50.07541805897241,59.33362409128523,43.81639391318527,57.58707985308614,57.11635652687286,61.22770555188756,49.65772637896067,44.04832098585211,46.91461148768237,41.23247845581377,52.92968160654831,56.8887259136208,52.67263476203065,77.65427412483737,39.55862239197136,44.76666790192215,71.76983414707719,44.78473294866019,47.0440985895218,68.97733501029698,56.78606976684922,65.78727006355537,59.1657560662578,46.50363755616914,30.09973741259139,57.66746375766488,51.30610294478829,49.57805174756857,63.36956464822779,67.62868493299079,63.04954119808217,50.92844714190318,47.04395298274837,61.62134441251573,53.23457115233669,43.19793621433612,28.01386994923953,39.09266878717504,67.66856746052292,57.13798686963181,80.24094904283963,45.81019671565408,41.69536156294196,51.62110890779861,65.19399377579843,56.26000148022457,66.2690353404048,46.4888132851458,63.32985136007797,73.21675590838127,37.88849389265866,59.92010089583398,45.6768411263263,36.63768363455331,59.72359990232016,51.9070035912247,54.84239247692112,38.57339812367009,60.5862643103599,53.17624644316051,50.28765321737053,58.04023529475118,64.51115863443904,47.97697604033965,46.75053114942049,45.73725456934758,59.60904373762601,47.38370223853747,52.80598915029405,53.80323184759187,51.87632515163446,62.24980414573297,53.1942504921529,69.84438320420261,50.49101225217508,50.10996164988721,56.17907497775815,65.67651197667568,57.252634212591,42.00774726301981,68.40525527902064,70.8377108741188,66.68083788345446,37.07127287627847,53.29216668052062,41.16724729157433,25.24693676697624,65.32598072458424,56.18226779525685,38.19543987400169,75.73974264855765,66.70277883725163,50.95113997539189,48.73997751369092,52.23901581923854,64.34270365048481,42.17031173266687,33.36629415381235,49.82236682683638,59.34506983170694,56.23366105995289,52.01799322081952,54.21446044805766,53.31090603896278,59.34899287930546,60.52996612452182,53.12295917218296,65.83323955722078,69.60641587482691,60.94842828937204,61.39477252506994,42.3812766768887,58.97216910202212,67.48305728708394,65.96371020180659,73.08233121800717,63.52661870905184,58.59622450420859,49.85174856197451,74.09567815016652,62.26404932113084,65.70078514806228,45.58116478518225,69.70929367593392,62.13682775897199,64.41357281431024,67.21509091354353,58.91335780758905,70.80607936798467,57.97111095573668,68.93920356884789,72.72086611560978,72.06593555809631,68.52265616532883,64.50341414566169,63.77932485395809,69.74577821030395,60.22770987441916,41.54504502305272,58.74959390724381,69.9697973456433,55.15837913273658,61.5590664106109,62.7435674611177,57.84829989024795,43.48926289508962,64.01003800281796,53.03282944430793,63.33811722292005,86.77509456226693,41.00187311766933,82.55277217993218,74.53179437517646,67.1694243014875,62.08453306970934,59.03902782709866,77.62908675623393,83.37888427743535,43.58619392029016,76.79263993917033,54.71680558463374,52.49483072358295,67.53080748563785,65.50455469960345,59.39029503764276,52.08984114901617,54.18821883420831,36.80647953705467,55.94108822499661,67.15732166138866,73.52270208651696,57.443759761548,62.06951716403819,84.6480186190208,31.3432416933938,54.25946347256505,54.10262086246304,59.44572374966636,62.70645773350376,91.46258632810384,59.56542840505623,68.77226852086378,62.98291481383406,67.12519996997766,95.74726421624118,58.51370655834725,100.9612517274452,44.07401603249153,68.64669065330025,40.147082395877,56.90666917035701,66.04292679643241,50.63757997710284,54.40914319434523,66.94403122654811,72.64732124467123,87.1400214617242,65.44104659852825,73.85707873770177,79.41571955057596,65.64237868986717,46.40063434173724,67.04703215515003,61.83820478688788,66.32097388725502,76.04321037936646,55.01184734523079,41.38744621242574,58.32082295297175,60.63088538655724,78.97670743380399,68.4951375567808,64.92774760750001,71.90923171603733,62.48236959783925,61.52846510220525,62.00068867898397,63.34091551149953,54.95223645106879,59.3677360483773,68.15186374149397,92.65311899225108,50.21293647127288,74.2098749312653,49.68164626577624,46.64399384432546,68.90805643915068,67.34053961736267,63.2842490681212,70.09128734372804,66.88974654234269,53.69996077237762,45.8587529774576,44.51848735730785,77.93660044668195,85.98862478562268,34.63919770439487,69.37498538931085,59.92922622209487,68.12619961011443,61.95544196481865,70.77651929950618,49.27529066568665,68.18151034369448,53.91128462492845,58.03236459157186,85.45909000237447,54.31354837007105,62.89120100794056,71.83608296850889,61.36669485340646,53.25139506212656],[4.232819750623513,-0.5425276806476234,8.137151780757151,5.564441348267664,7.720206772625502,-0.4480794264596852,11.11070391589702,7.523767684737699,-4.373399595207381,-5.249886032647943,2.016738899831026,12.63150874490312,-1.030721027822629,16.5577045033251,3.200686754101419,9.067913923670545,-1.414281310826986,-0.6103091698697369,0.91698257390631,12.28623267655757,16.31225815756481,6.428520357255024,3.474961578717078,8.936692550000785,4.435486211827261,7.028511383625649,-2.326542058001898,14.00296043667415,8.930537181688301,5.602046406009009,9.931656362828214,11.81259778828513,-2.527101725770642,-0.5944663324142567,8.789213577162116,3.415952664808721,-0.5115203960984402,6.543980305208208,0.9312182005620286,5.763840485861429,10.96291895137392,-2.21807940127627,10.90120215968218,-2.762902461435139,9.07180818819225,-3.02094449366335,-3.676637353409483,-2.535500777805922,0.7502616118898473,-0.4853215683543013,-1.563082173864807,9.838072679525922,15.58083452949178,10.49724235829906,2.408090574422161,-2.087415441567657,-2.623357097914329,-0.5085843258224472,11.47002398400534,5.701357819594236,-0.1633342931424764,8.353409462354705,0.9638985724496578,7.987850330586305,9.481518093127228,0.2692932722189028,-1.69582648913574,12.10014779398492,-0.2659339928657687,7.772485772646718,13.79458785789419,5.349187397177296,-3.59098685320831,2.045157878468324,4.565021291054535,-2.83570445341703,2.510873653655125,-1.441931213610019,4.920266705063547,-4.020440729228667,-2.004569382077833,0.2335394175027119,-1.788575136282439,-1.647923245414574,2.69777462008663,-2.181803775565648,8.027686661570399,-1.969975617446359,10.98286066837278,-1.160733805132999,2.24243206406895,-2.560051944040353,8.181265556472276,3.792418656706175,11.62608372653749,0.4434951621558838,6.199148308530482,11.36663034510502,6.999986773693042,-1.229204744789222,0.3698431888530038,-1.88228883153338,-1.316379664257362,4.799502760743515,7.61567868701637,-2.668775488272864,10.55347279221604,0.5203301894100818,1.527894533942167,9.32949435061753,11.52003549382242,-2.206016077886915,8.251144457802155,0.03121803963841785,1.10901397084379,-0.4680028430288132,8.980129310829398,2.708958007250125,8.9414357908177,-3.179954019810637,-0.3137667095844208,8.118177463245459,0.8247475572904008,-3.504478306675303,-4.276681407260781,14.64438805251967,3.934678636140653,7.693335410408906,14.00255583709433,2.018997650873857,3.189775231538206,3.42210059205744,10.44749400224536,0.3321905203886786,-1.142793786272332,0.04148070965943873,12.48014003381167,-1.123639911821826,13.29114440649638,12.1040173765964,-0.7259183078005123,1.490007739782328,-2.684210361215399,0.9451579395973084,-3.062246024313318,-1.665750480707622,11.83660653332691,13.41968011378255,15.7111420134097,-6.498670763282057,10.09877053981202,16.9356370759568,13.84537230161831,16.9632164397141,8.230414689854435,13.26121944599451,23.80197035397342,20.47070484204467,6.270838474219957,9.823953527812371,13.94729321765877,9.827199473608864,10.94977952740872,19.76321950863225,14.43737604512313,15.16304483281893,11.46022994845841,7.536358810389231,19.75615479758862,9.481579596768796,10.29921647412854,11.72733910759654,9.342202668488653,7.834830224241408,11.2778276792599,14.69262294273295,16.04545202514812,19.84744714094894,11.76232311539535,21.37389366578194,7.845132157099002,18.11534703358237,17.88751165524773,19.36047873504872,9.467643378427837,12.4824146600134,3.861345533131214,16.33204132048962,9.114615859742869,15.649367982329,8.655070884760278,17.21930172362133,10.03690755455819,9.543698019766545,13.26164114417538,8.25201643815172,13.98714091276889,26.26139488065814,8.423455751460189,15.22729189939731,8.19650290887121,20.93592128155699,13.74691524728043,9.360550625925775,22.49755213669696,20.69661082897753,4.189020429085311,20.59601371016689,12.91308758220959,7.372257111806846,18.44166187793921,12.4252812085603,13.13913477886202,9.968407940475892,14.35161405355152,13.05666791003408,8.239409317600455,19.81649525077164,19.88453462248909,6.286897150416017,4.496450992722046,19.49488992897197,7.941080220739462,11.14126386970024,8.368407339199052,13.70777817664587,11.22342497188812,16.18449190249744,10.9994292845717,8.441592092439222,16.56156374653452,9.547981828336091,22.75983724913866,9.269407512539466,22.34876710063047,8.161916334683326,17.88231305897847,7.879173378512007,9.011950053690768,19.08080319614822,6.755798603871305,5.813352701524231,15.73045681634348,15.31025948331766,14.87903455621311,9.673126683994496,22.21198384909992,21.46680023596173,5.266415124563736,10.92740130027062,12.10540533125296,20.14640291727135,8.241100775531159,23.94910902074293,7.787529318344895,6.069974265584293,3.347592138539966,9.166509423985296,22.56079019061365,17.8053759980108,14.74243990724489,24.61345934603529,14.80592617228488,21.00744933524062,9.263291890903098,14.0378858638913,9.398865403146353,8.980040608927197,21.2975042611281,23.92460076891101,14.10629158169757,17.23778481471543,11.30094215743748,5.9214059482564,15.96964542689676,15.28581120762927,9.320029861366521,21.84075726692406,25.55017316349958,11.21344493171852,12.45681547981458,19.1496039537313,17.9630068321929,23.97620311844527,5.528940271508898,9.34729344576769,11.93952808894856,14.08963368450275,9.071791066235789,20.76021501367509,5.998434717777542,9.372990737264317,10.02775686067631,18.32106583757879,15.79620581885376,17.02984503814046,11.96068861148626,18.76546804060854,11.27136872322628,10.20508740380726]],"container":"<table class=\"display compact stripe\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>id<\/th>\n      <th>group<\/th>\n      <th>baseline<\/th>\n      <th>L<\/th>\n      <th>W<\/th>\n      <th>time1<\/th>\n      <th>change1<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"pageLength":10,"columnDefs":[{"targets":3,"render":"function(data, type, row, meta) {\n    return type !== 'display' ? data : DTWidget.formatRound(data, 2, 3, \",\", \".\", null);\n  }"},{"targets":6,"render":"function(data, type, row, meta) {\n    return type !== 'display' ? data : DTWidget.formatRound(data, 2, 3, \",\", \".\", null);\n  }"},{"targets":7,"render":"function(data, type, row, meta) {\n    return type !== 'display' ? data : DTWidget.formatRound(data, 2, 3, \",\", \".\", null);\n  }"},{"className":"dt-right","targets":[1,3,4,5,6,7]},{"orderable":false,"targets":0},{"name":" ","targets":0},{"name":"id","targets":1},{"name":"group","targets":2},{"name":"baseline","targets":3},{"name":"L","targets":4},{"name":"W","targets":5},{"name":"time1","targets":6},{"name":"change1","targets":7}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":["options.columnDefs.0.render","options.columnDefs.1.render","options.columnDefs.2.render"],"jsHooks":[]}</script>
 </div>
 </div>
 </section>
@@ -2868,7 +2884,7 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
 <p>We can see that both <code>time1</code> and <code>change1</code> differ significantly between the two groups. Even though patients were randomized to the treatment and control groups, the baseline values between control and treatment groups are slightly different, though the difference is not significant. We can explore this more using a covariate balance plot:</p>
 <div class="cell">
 <div class="cell-output cell-output-stderr">
-<pre><code> cobalt (Version 4.6.1, Build Date: 2025-08-20)</code></pre>
+<pre><code> cobalt (Version 4.6.0, Build Date: 2025-04-15)</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Note: `s.d.denom` not specified; assuming "pooled".</code></pre>
@@ -13340,248 +13356,239 @@ Howe, Chanelle J., Stephen R. Cole, Joan S. Chmiel, and Alvaro Muñoz. 2011. <sp
 <div id="ref-pearl2010" class="csl-entry" role="listitem">
 Pearl, Judea. 2010. <span>“An Introduction to Causal Inference.”</span> <em>The International Journal of Biostatistics</em> 6 (2). <a href="https://doi.org/10.2202/1557-4679.1203">https://doi.org/10.2202/1557-4679.1203</a>.
 </div>
-<div id="ref-tennant2021" class="csl-entry" role="listitem">
-Tennant, Peter W G, Kellyn F Arnold, George T H Ellison, and Mark S Gilthorpe. 2021. <span>“Analyses of <span>‘</span>Change Scores<span>’</span> Do Not Estimate Causal Effects in Observational Data.”</span> <em>International Journal of Epidemiology</em> 51 (5): 1604–15. <a href="https://doi.org/10.1093/ije/dyab050">https://doi.org/10.1093/ije/dyab050</a>.
-</div>
 </div></section></div></main>
 <!-- /main column -->
 <script id="quarto-html-after-body" type="application/javascript">
-  window.document.addEventListener("DOMContentLoaded", function (event) {
-    const icon = "";
-    const anchorJS = new window.AnchorJS();
-    anchorJS.options = {
-      placement: 'right',
-      icon: icon
-    };
-    anchorJS.add('.anchored');
-    const isCodeAnnotation = (el) => {
-      for (const clz of el.classList) {
-        if (clz.startsWith('code-annotation-')) {                     
-          return true;
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
         }
       }
-      return false;
-    }
-    const onCopySuccess = function(e) {
-      // button target
-      const button = e.trigger;
-      // don't keep focus
-      button.blur();
-      // flash "checked"
-      button.classList.add('code-copy-button-checked');
-      var currentTitle = button.getAttribute("title");
-      button.setAttribute("title", "Copied!");
-      let tooltip;
-      if (window.bootstrap) {
-        button.setAttribute("data-bs-toggle", "tooltip");
-        button.setAttribute("data-bs-placement", "left");
-        button.setAttribute("data-bs-title", "Copied!");
-        tooltip = new bootstrap.Tooltip(button, 
-          { trigger: "manual", 
-            customClass: "code-copy-button-tooltip",
-            offset: [0, -8]});
-        tooltip.show();    
-      }
-      setTimeout(function() {
-        if (tooltip) {
-          tooltip.hide();
-          button.removeAttribute("data-bs-title");
-          button.removeAttribute("data-bs-toggle");
-          button.removeAttribute("data-bs-placement");
-        }
-        button.setAttribute("title", currentTitle);
-        button.classList.remove('code-copy-button-checked');
-      }, 1000);
-      // clear code selection
-      e.clearSelection();
-    }
-    const getTextToCopy = function(trigger) {
-        const codeEl = trigger.previousElementSibling.cloneNode(true);
-        for (const childEl of codeEl.children) {
-          if (isCodeAnnotation(childEl)) {
-            childEl.remove();
-          }
-        }
-        return codeEl.innerText;
-    }
-    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
-      text: getTextToCopy
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
     });
-    clipboard.on('success', onCopySuccess);
-    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
-      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
-        text: getTextToCopy,
-        container: window.document.getElementById('quarto-embedded-source-code-modal')
-      });
-      clipboardModal.on('success', onCopySuccess);
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
     }
-      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
-      var mailtoRegex = new RegExp(/^mailto:/);
-        var filterRegex = new RegExp('/' + window.location.host + '/');
-      var isInternal = (href) => {
-          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
-      }
-      // Inspect non-navigation links and adorn them if external
-     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
-      for (var i=0; i<links.length; i++) {
-        const link = links[i];
-        if (!isInternal(link.href)) {
-          // undo the damage that might have been done by quarto-nav.js in the case of
-          // links that we want to consider external
-          if (link.dataset.originalHref !== undefined) {
-            link.href = link.dataset.originalHref;
-          }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
         }
       }
-    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
-      const config = {
-        allowHTML: true,
-        maxWidth: 500,
-        delay: 100,
-        arrow: false,
-        appendTo: function(el) {
-            return el.parentElement;
-        },
-        interactive: true,
-        interactiveBorder: 10,
-        theme: 'quarto',
-        placement: 'bottom-start',
-      };
-      if (contentFn) {
-        config.content = contentFn;
-      }
-      if (onTriggerFn) {
-        config.onTrigger = onTriggerFn;
-      }
-      if (onUntriggerFn) {
-        config.onUntrigger = onUntriggerFn;
-      }
-      window.tippy(el, config); 
     }
-    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
-    for (var i=0; i<noterefs.length; i++) {
-      const ref = noterefs[i];
-      tippyHover(ref, function() {
-        // use id or data attribute instead here
-        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
-        try { href = new URL(href).hash; } catch {}
-        const id = href.replace(/^#\/?/, "");
-        const note = window.document.getElementById(id);
-        if (note) {
-          return note.innerHTML;
-        } else {
-          return "";
-        }
-      });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
     }
-    const xrefs = window.document.querySelectorAll('a.quarto-xref');
-    const processXRef = (id, note) => {
-      // Strip column container classes
-      const stripColumnClz = (el) => {
-        el.classList.remove("page-full", "page-columns");
-        if (el.children) {
-          for (const child of el.children) {
-            stripColumnClz(child);
-          }
-        }
-      }
-      stripColumnClz(note)
-      if (id === null || id.startsWith('sec-')) {
-        // Special case sections, only their first couple elements
-        const container = document.createElement("div");
-        if (note.children && note.children.length > 2) {
-          container.appendChild(note.children[0].cloneNode(true));
-          for (let i = 1; i < note.children.length; i++) {
-            const child = note.children[i];
-            if (child.tagName === "P" && child.innerText === "") {
-              continue;
-            } else {
-              container.appendChild(child.cloneNode(true));
-              break;
-            }
-          }
-          if (window.Quarto?.typesetMath) {
-            window.Quarto.typesetMath(container);
-          }
-          return container.innerHTML
-        } else {
-          if (window.Quarto?.typesetMath) {
-            window.Quarto.typesetMath(note);
-          }
-          return note.innerHTML;
-        }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
       } else {
-        // Remove any anchor links if they are present
-        const anchorLink = note.querySelector('a.anchorjs-link');
-        if (anchorLink) {
-          anchorLink.remove();
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
         }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
         if (window.Quarto?.typesetMath) {
           window.Quarto.typesetMath(note);
         }
-        if (note.classList.contains("callout")) {
-          return note.outerHTML;
-        } else {
-          return note.innerHTML;
-        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
       }
     }
-    for (var i=0; i<xrefs.length; i++) {
-      const xref = xrefs[i];
-      tippyHover(xref, undefined, function(instance) {
-        instance.disable();
-        let url = xref.getAttribute('href');
-        let hash = undefined; 
-        if (url.startsWith('#')) {
-          hash = url;
-        } else {
-          try { hash = new URL(url).hash; } catch {}
-        }
-        if (hash) {
-          const id = hash.replace(/^#\/?/, "");
-          const note = window.document.getElementById(id);
-          if (note !== null) {
-            try {
-              const html = processXRef(id, note.cloneNode(true));
-              instance.setContent(html);
-            } finally {
-              instance.enable();
-              instance.show();
-            }
-          } else {
-            // See if we can fetch this
-            fetch(url.split('#')[0])
-            .then(res => res.text())
-            .then(html => {
-              const parser = new DOMParser();
-              const htmlDoc = parser.parseFromString(html, "text/html");
-              const note = htmlDoc.getElementById(id);
-              if (note !== null) {
-                const html = processXRef(id, note);
-                instance.setContent(html);
-              } 
-            }).finally(() => {
-              instance.enable();
-              instance.show();
-            });
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
           }
         } else {
-          // See if we can fetch a full url (with no hash to target)
-          // This is a special case and we should probably do some content thinning / targeting
-          fetch(url)
+          // See if we can fetch this
+          fetch(url.split('#')[0])
           .then(res => res.text())
           .then(html => {
             const parser = new DOMParser();
             const htmlDoc = parser.parseFromString(html, "text/html");
-            const note = htmlDoc.querySelector('main.content');
+            const note = htmlDoc.getElementById(id);
             if (note !== null) {
-              // This should only happen for chapter cross references
-              // (since there is no id in the URL)
-              // remove the first header
-              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
-                note.children[0].remove();
-              }
-              const html = processXRef(null, note);
+              const html = processXRef(id, note);
               instance.setContent(html);
             } 
           }).finally(() => {
@@ -13589,161 +13596,185 @@ Tennant, Peter W G, Kellyn F Arnold, George T H Ellison, and Mark S Gilthorpe. 2
             instance.show();
           });
         }
-      }, function(instance) {
-      });
-    }
-        let selectedAnnoteEl;
-        const selectorForAnnotation = ( cell, annotation) => {
-          let cellAttr = 'data-code-cell="' + cell + '"';
-          let lineAttr = 'data-code-annotation="' +  annotation + '"';
-          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
-          return selector;
-        }
-        const selectCodeLines = (annoteEl) => {
-          const doc = window.document;
-          const targetCell = annoteEl.getAttribute("data-target-cell");
-          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
-          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
-          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
-          const lineIds = lines.map((line) => {
-            return targetCell + "-" + line;
-          })
-          let top = null;
-          let height = null;
-          let parent = null;
-          if (lineIds.length > 0) {
-              //compute the position of the single el (top and bottom and make a div)
-              const el = window.document.getElementById(lineIds[0]);
-              top = el.offsetTop;
-              height = el.offsetHeight;
-              parent = el.parentElement.parentElement;
-            if (lineIds.length > 1) {
-              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
-              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
-              height = bottom - top;
-            }
-            if (top !== null && height !== null && parent !== null) {
-              // cook up a div (if necessary) and position it 
-              let div = window.document.getElementById("code-annotation-line-highlight");
-              if (div === null) {
-                div = window.document.createElement("div");
-                div.setAttribute("id", "code-annotation-line-highlight");
-                div.style.position = 'absolute';
-                parent.appendChild(div);
-              }
-              div.style.top = top - 2 + "px";
-              div.style.height = height + 4 + "px";
-              div.style.left = 0;
-              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
-              if (gutterDiv === null) {
-                gutterDiv = window.document.createElement("div");
-                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
-                gutterDiv.style.position = 'absolute';
-                const codeCell = window.document.getElementById(targetCell);
-                const gutter = codeCell.querySelector('.code-annotation-gutter');
-                gutter.appendChild(gutterDiv);
-              }
-              gutterDiv.style.top = top - 2 + "px";
-              gutterDiv.style.height = height + 4 + "px";
-            }
-            selectedAnnoteEl = annoteEl;
-          }
-        };
-        const unselectCodeLines = () => {
-          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
-          elementsIds.forEach((elId) => {
-            const div = window.document.getElementById(elId);
-            if (div) {
-              div.remove();
-            }
-          });
-          selectedAnnoteEl = undefined;
-        };
-          // Handle positioning of the toggle
-      window.addEventListener(
-        "resize",
-        throttle(() => {
-          elRect = undefined;
-          if (selectedAnnoteEl) {
-            selectCodeLines(selectedAnnoteEl);
-          }
-        }, 10)
-      );
-      function throttle(fn, ms) {
-      let throttle = false;
-      let timer;
-        return (...args) => {
-          if(!throttle) { // first call gets through
-              fn.apply(this, args);
-              throttle = true;
-          } else { // all the others get throttled
-              if(timer) clearTimeout(timer); // cancel #2
-              timer = setTimeout(() => {
-                fn.apply(this, args);
-                timer = throttle = false;
-              }, ms);
-          }
-        };
-      }
-        // Attach click handler to the DT
-        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
-        for (const annoteDlNode of annoteDls) {
-          annoteDlNode.addEventListener('click', (event) => {
-            const clickedEl = event.target;
-            if (clickedEl !== selectedAnnoteEl) {
-              unselectCodeLines();
-              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
-              if (activeEl) {
-                activeEl.classList.remove('code-annotation-active');
-              }
-              selectCodeLines(clickedEl);
-              clickedEl.classList.add('code-annotation-active');
-            } else {
-              // Unselect the line
-              unselectCodeLines();
-              clickedEl.classList.remove('code-annotation-active');
-            }
-          });
-        }
-    const findCites = (el) => {
-      const parentEl = el.parentElement;
-      if (parentEl) {
-        const cites = parentEl.dataset.cites;
-        if (cites) {
-          return {
-            el,
-            cites: cites.split(' ')
-          };
-        } else {
-          return findCites(el.parentElement)
-        }
       } else {
-        return undefined;
-      }
-    };
-    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
-    for (var i=0; i<bibliorefs.length; i++) {
-      const ref = bibliorefs[i];
-      const citeInfo = findCites(ref);
-      if (citeInfo) {
-        tippyHover(citeInfo.el, function() {
-          var popup = window.document.createElement('div');
-          citeInfo.cites.forEach(function(cite) {
-            var citeDiv = window.document.createElement('div');
-            citeDiv.classList.add('hanging-indent');
-            citeDiv.classList.add('csl-entry');
-            var biblioDiv = window.document.getElementById('ref-' + cite);
-            if (biblioDiv) {
-              citeDiv.innerHTML = biblioDiv.innerHTML;
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
             }
-            popup.appendChild(citeDiv);
-          });
-          return popup.innerHTML;
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
         });
       }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
     }
-  });
-  </script>
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
 </div> <!-- /content -->
 
 
