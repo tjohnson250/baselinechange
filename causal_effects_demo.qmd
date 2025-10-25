@@ -28,6 +28,9 @@ This version was produced by Claude Sonnet 4.5 with extended thinking. I have sc
 
 Part of the reason for posting this is to demonstrate how to use LLMs to better understand a topic. To assess what Claude produced here and create a useful tutorial, I need to critically review the results and then fill in information that Claude left out. This requires active engagement on my part. Teaching and learning research shows that active engagement with material is one of the most important factors in learning. 
 
+The Claude chat used to produce the initial version of this document is here:
+https://claude.ai/share/19d7ee21-d865-49f0-8e30-1a72c50f5a38
+
 ## Setup
 
 ```{r}
@@ -543,9 +546,9 @@ tidy_dag <- tidy_dagitty(dag_confounded)
 ggdag(tidy_dag) +
   theme_dag() +
   ggtitle("Mediation with Confounding") +
-  geom_dag_text(color = "white") +
   geom_dag_edges() +
   geom_dag_node(aes(color = name == "C")) +
+  geom_dag_text(color = "white") +
   scale_color_manual(values = c("TRUE" = "red", "FALSE" = "steelblue"),
                      guide = "none")
 ```
