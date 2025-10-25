@@ -1,0 +1,600 @@
+---
+title: "Understanding Causal Effects: Path Coefficients, Direct Effects, and Total Effects"
+author: "Causal Inference Tutorial"
+format: 
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: show
+    theme: cosmo
+    fig-width: 8
+    fig-height: 6
+execute:
+  warning: false
+  message: false
+---
+
+## Introduction
+
+This document demonstrates the key distinctions between:
+
+- **Path coefficients** in linear structural equation models
+- **Direct effects** (controlled and natural)
+- **Total effects** and indirect effects
+- How these concepts differ in linear vs. non-linear models
+- The connection to causal DAGs
+
+## Setup
+
+```{r}
+# Load required packages
+library(tidyverse)
+library(lavaan)
+library(dagitty)
+library(ggdag)
+library(knitr)
+library(kableExtra)
+
+# Set seed for reproducibility
+set.seed(123)
+```
+
+## Part 1: Linear Model (No Interaction)
+
+### The Causal DAG
+
+In this section, we'll work with a simple mediation model:
+**X → M → Y** with a direct path **X → Y**
+
+```{r}
+# Create DAG
+dag <- dagitty('dag {
+  X -> M
+  M -> Y
+  X -> Y
+}')
+
+# Plot the DAG
+ggdag(dag, layout = "circle") +
+  theme_dag() +
+  ggtitle("Simple Mediation DAG")
+```
+
+### Generate Data (Linear, No Interaction)
+
+```{r}
+n <- 5000
+
+# Generate data according to structural equations
+# M = 0.5*X + e_M
+# Y = 0.3*X + 0.4*M + e_Y
+
+data_linear <- tibble(
+  X = rnorm(n, mean = 0, sd = 1),
+  e_M = rnorm(n, mean = 0, sd = 1),
+  e_Y = rnorm(n, mean = 0, sd = 1)
+) %>%
+  mutate(
+    M = 0.5 * X + e_M,
+    Y = 0.3 * X + 0.4 * M + e_Y
+  )
+```
+
+### Path Analysis with lavaan
+
+```{r}
+# Specify the path model
+model_linear <- '
+  # Regressions
+  M ~ a*X
+  Y ~ b*M + c_prime*X
+  
+  # Define indirect and total effects
+  indirect := a*b
+  total := c_prime + a*b
+  direct := c_prime
+'
+
+# Fit the model
+fit_linear <- sem(model_linear, data = data_linear)
+
+# Display results
+summary(fit_linear, standardized = TRUE)
+```
+
+### Path Coefficients vs. Causal Effects
+
+```{r}
+# Extract parameter estimates
+params_linear <- parameterEstimates(fit_linear) %>%
+  filter(op %in% c("~", ":=")) %>%
+  select(label, est, se, pvalue) %>%
+  filter(!is.na(label))
+
+kable(params_linear, 
+      caption = "Path Coefficients and Effects in Linear Model",
+      digits = 3) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+**Key Point**: In the linear model **without interaction**:
+
+- Path coefficient `c_prime` (X→Y) = Direct Effect = 0.3
+- Path coefficient `a` (X→M) × path coefficient `b` (M→Y) = Indirect Effect = 0.5 × 0.4 = 0.2
+- Total Effect = Direct + Indirect = 0.3 + 0.2 = 0.5
+
+### Manual Calculation of Effects
+
+```{r}
+# Calculate effects manually using regression
+m1 <- lm(M ~ X, data = data_linear)
+m2 <- lm(Y ~ X + M, data = data_linear)
+m3 <- lm(Y ~ X, data = data_linear)
+
+results_linear <- tibble(
+  Effect = c("a (X→M)", "b (M→Y|X)", "c' (Direct Effect)", 
+             "a×b (Indirect Effect)", "c (Total Effect)"),
+  Estimate = c(
+    coef(m1)["X"],
+    coef(m2)["M"],
+    coef(m2)["X"],
+    coef(m1)["X"] * coef(m2)["M"],
+    coef(m3)["X"]
+  )
+)
+
+kable(results_linear, 
+      caption = "Manual Calculation of Effects",
+      digits = 3) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+### Controlled Direct Effect (CDE)
+
+In the linear model, the CDE is the same for all values of M:
+
+```{r}
+# The CDE(m) is the coefficient on X in the model Y ~ X + M
+# It doesn't vary with m in a linear model
+
+cde_values <- tibble(
+  m = seq(-2, 2, by = 0.5),
+  CDE = coef(m2)["X"]  # Same for all values of m
+)
+
+ggplot(cde_values, aes(x = m, y = CDE)) +
+  geom_line(color = "blue", size = 1.2) +
+  geom_point(size = 3) +
+  geom_hline(yintercept = coef(m2)["X"], linetype = "dashed", color = "red") +
+  labs(title = "Controlled Direct Effect in Linear Model",
+       subtitle = "CDE does not vary with m (no interaction)",
+       x = "Value of Mediator (m)",
+       y = "CDE(m)") +
+  theme_minimal()
+```
+
+### Natural Direct and Indirect Effects
+
+```{r}
+# In linear models without interaction:
+# NDE = CDE = path coefficient c'
+# NIE = a × b
+
+nde_linear <- coef(m2)["X"]
+nie_linear <- coef(m1)["X"] * coef(m2)["M"]
+total_linear <- nde_linear + nie_linear
+
+cat("Natural Direct Effect (NDE):", round(nde_linear, 3), "\n")
+cat("Natural Indirect Effect (NIE):", round(nie_linear, 3), "\n")
+cat("Total Effect:", round(total_linear, 3), "\n")
+cat("Sum of NDE + NIE:", round(nde_linear + nie_linear, 3), "\n")
+```
+
+**Important**: In linear models without interaction, CDE = NDE for all values of m.
+
+---
+
+## Part 2: Model with Interaction (Non-Linear Effects)
+
+### Generate Data with Interaction
+
+Now we add an X×M interaction term to create non-linearity:
+
+```{r}
+# Generate data with interaction
+# M = 0.5*X + e_M
+# Y = 0.3*X + 0.4*M + 0.2*X*M + e_Y
+
+data_interaction <- tibble(
+  X = rnorm(n, mean = 0, sd = 1),
+  e_M = rnorm(n, mean = 0, sd = 1),
+  e_Y = rnorm(n, mean = 0, sd = 1)
+) %>%
+  mutate(
+    M = 0.5 * X + e_M,
+    Y = 0.3 * X + 0.4 * M + 0.2 * X * M + e_Y
+  )
+```
+
+### Fit Models with Interaction
+
+```{r}
+# Regression models
+m1_int <- lm(M ~ X, data = data_interaction)
+m2_int <- lm(Y ~ X * M, data = data_interaction)  # Includes interaction
+m3_int <- lm(Y ~ X, data = data_interaction)
+
+# Display regression with interaction
+summary(m2_int)$coefficients %>%
+  kable(caption = "Outcome Regression with Interaction",
+        digits = 3) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+### Controlled Direct Effect (CDE) - Now Varies with m
+
+With interaction, the CDE depends on the level of M:
+
+```{r}
+# Extract coefficients
+theta0 <- coef(m2_int)["(Intercept)"]
+theta1 <- coef(m2_int)["X"]
+theta2 <- coef(m2_int)["M"]
+theta3 <- coef(m2_int)["X:M"]
+
+# CDE(m) = theta1 + theta3*m
+# This is the effect of changing X by 1 unit when M is held at level m
+
+m_values <- seq(-2, 2, by = 0.2)
+cde_interaction <- tibble(
+  m = m_values,
+  CDE = theta1 + theta3 * m_values
+)
+
+ggplot(cde_interaction, aes(x = m, y = CDE)) +
+  geom_line(color = "blue", size = 1.2) +
+  geom_point(alpha = 0.5) +
+  geom_hline(yintercept = theta1, linetype = "dashed", color = "red",
+             alpha = 0.5) +
+  annotate("text", x = 0, y = theta1 + 0.05, 
+           label = "Pure Direct Effect", color = "red") +
+  labs(title = "Controlled Direct Effect with Interaction",
+       subtitle = "CDE(m) = θ₁ + θ₃×m varies with the level of mediator",
+       x = "Value of Mediator (m)",
+       y = "CDE(m)") +
+  theme_minimal()
+```
+
+**Key Insight**: With interaction, there is no single "direct effect" - it depends on where you fix the mediator!
+
+### Natural Direct and Indirect Effects with Interaction
+
+```{r}
+# For binary X going from 0 to 1, with continuous M
+# We'll use the formulas from VanderWeele (2015)
+
+# Coefficients from regressions
+beta0 <- coef(m1_int)["(Intercept)"]
+beta1 <- coef(m1_int)["X"]  # a path
+
+# Calculate E[M|X=0]
+mean_M_X0 <- beta0
+
+# Pure NDE (holds M at level when X=0)
+# NDE_pure = (theta1 + theta3 * E[M|X=0])
+nde_pure <- theta1 + theta3 * mean_M_X0
+
+# Total NDE (holds M at level when X=1) 
+mean_M_X1 <- beta0 + beta1
+nde_total <- theta1 + theta3 * mean_M_X1
+
+# Pure NIE (changes M from X=0 to X=1, keeps X at 0)
+nie_pure <- (theta2 * beta1) + (theta3 * beta1 * mean_M_X0)
+
+# Total NIE (changes M from X=0 to X=1, keeps X at 1)
+nie_total <- (theta2 * beta1) + (theta3 * beta1 * mean_M_X1)
+
+# Total effect
+total_effect <- coef(m3_int)["X"]
+
+effects_df <- tibble(
+  Effect = c("Pure NDE", "Total NDE", "Pure NIE", "Total NIE", 
+             "Pure NDE + Pure NIE", "Total NDE + Total NIE", "Total Effect"),
+  Value = c(nde_pure, nde_total, nie_pure, nie_total,
+            nde_pure + nie_pure, nde_total + nie_total, total_effect)
+)
+
+kable(effects_df, 
+      caption = "Natural Direct and Indirect Effects with Interaction",
+      digits = 3) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+**Key Observations**:
+
+1. Pure NDE + Pure NIE = Total Effect ✓
+2. Total NDE + Total NIE = Total Effect ✓  
+3. Pure NDE ≠ Total NDE (they differ in how they handle the X×M interaction)
+4. Pure NIE ≠ Total NIE (they differ in how they handle the X×M interaction)
+5. The "pure" effects attribute the interaction to the indirect effect
+6. The "total" effects attribute the interaction to the direct effect
+
+### Visualizing the Decomposition
+
+```{r}
+# Create a bar chart showing effect decomposition
+decomp_data <- tibble(
+  Type = rep(c("Pure Decomposition", "Total Decomposition"), each = 2),
+  Component = rep(c("Direct Effect", "Indirect Effect"), 2),
+  Value = c(nde_pure, nie_pure, nde_total, nie_total)
+)
+
+ggplot(decomp_data, aes(x = Type, y = Value, fill = Component)) +
+  geom_bar(stat = "identity", position = "stack") +
+  geom_hline(yintercept = total_effect, linetype = "dashed", 
+             color = "red", size = 1) +
+  annotate("text", x = 1.5, y = total_effect + 0.03, 
+           label = "Total Effect", color = "red") +
+  scale_fill_brewer(palette = "Set2") +
+  labs(title = "Natural Direct and Indirect Effects Decomposition",
+       subtitle = "Both decompositions sum to the total effect",
+       y = "Effect Size") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+```
+
+---
+
+## Part 3: Comparison Summary Table
+
+```{r}
+comparison <- tibble(
+  Characteristic = c(
+    "Path coefficients interpretable as causal effects?",
+    "CDE varies with level of M?",
+    "NDE = CDE?",
+    "Single direct effect value?",
+    "Indirect effect calculation",
+    "Effect decomposition"
+  ),
+  `Linear Model (No Interaction)` = c(
+    "Yes",
+    "No - constant across all m",
+    "Yes, they are equal",
+    "Yes - one unique value",
+    "a × b (product of path coefficients)",
+    "TE = DE + IE (simple sum)"
+  ),
+  `Model with Interaction` = c(
+    "No - effects are conditional",
+    "Yes - CDE(m) = θ₁ + θ₃×m",
+    "No - they differ",
+    "No - depends on reference level",
+    "Requires counterfactual formulas",
+    "TE = Pure(NDE+NIE) = Total(NDE+NIE)"
+  )
+)
+
+kable(comparison, 
+      caption = "Key Differences: Linear vs. Non-Linear Models") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                full_width = TRUE) %>%
+  column_spec(1, bold = TRUE, width = "15em") %>%
+  column_spec(2:3, width = "15em")
+```
+
+---
+
+## Part 4: Practical Example with Interpretation
+
+Let's create a realistic example: effect of **education (X)** on **income (Y)** mediated by **job prestige (M)**.
+
+```{r}
+# Generate realistic data
+set.seed(456)
+n <- 2000
+
+practical_data <- tibble(
+  education = rnorm(n, mean = 14, sd = 2),  # Years of education
+  e_prestige = rnorm(n, mean = 0, sd = 5),
+  e_income = rnorm(n, mean = 0, sd = 8)
+) %>%
+  mutate(
+    prestige = 3 * education + e_prestige,  # Job prestige score
+    # Income depends on education, prestige, AND their interaction
+    income = 2 * education + 1.5 * prestige + 0.3 * education * prestige + e_income
+  )
+
+# Visualize the data
+ggplot(practical_data, aes(x = education, y = income, color = prestige)) +
+  geom_point(alpha = 0.4) +
+  scale_color_viridis_c() +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(title = "Education, Job Prestige, and Income",
+       x = "Years of Education",
+       y = "Income (thousands)",
+       color = "Job Prestige") +
+  theme_minimal()
+```
+
+### Fit Models
+
+```{r}
+# Mediator model
+med_model <- lm(prestige ~ education, data = practical_data)
+
+# Outcome model with interaction
+out_model <- lm(income ~ education * prestige, data = practical_data)
+
+# Total effect model
+tot_model <- lm(income ~ education, data = practical_data)
+```
+
+### Calculate and Interpret Effects
+
+```{r}
+# Extract coefficients
+a_coef <- coef(med_model)["education"]
+b0_coef <- coef(out_model)["(Intercept)"]
+b1_coef <- coef(out_model)["education"]
+b2_coef <- coef(out_model)["prestige"]
+b3_coef <- coef(out_model)["education:prestige"]
+
+# Mean prestige at different education levels
+mean_prestige_low <- predict(med_model, 
+                              newdata = data.frame(education = 12))
+mean_prestige_high <- predict(med_model, 
+                               newdata = data.frame(education = 16))
+
+# CDE at different prestige levels
+prestige_levels <- c(30, 40, 50, 60)
+cde_values_practical <- sapply(prestige_levels, 
+                               function(m) b1_coef + b3_coef * m)
+
+cde_table <- tibble(
+  `Prestige Level` = prestige_levels,
+  `CDE (Effect per Year of Education)` = cde_values_practical,
+  `Interpretation` = case_when(
+    prestige_levels == 30 ~ "Low prestige job",
+    prestige_levels == 40 ~ "Medium-low prestige",
+    prestige_levels == 50 ~ "Medium-high prestige",
+    prestige_levels == 60 ~ "High prestige job"
+  )
+)
+
+kable(cde_table,
+      caption = "Controlled Direct Effects at Different Prestige Levels",
+      digits = 2) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+**Interpretation**: The direct effect of education on income INCREASES as we move to higher prestige jobs. This makes sense - education may be more valuable (in terms of income) in high-prestige positions.
+
+### Natural Effects
+
+```{r}
+# Calculate natural effects for 1-year increase in education
+mean_prestige_base <- predict(med_model, 
+                               newdata = data.frame(education = 14))
+mean_prestige_increased <- predict(med_model, 
+                                    newdata = data.frame(education = 15))
+
+# Pure NDE (fixes prestige at baseline education level)
+pure_nde <- b1_coef + b3_coef * mean_prestige_base
+
+# Pure NIE (changes prestige due to education, holds education at baseline)
+pure_nie <- (b2_coef + b3_coef * 14) * a_coef
+
+# Total effect
+total_eff <- coef(tot_model)["education"]
+
+interpretation_table <- tibble(
+  Effect = c("Pure Natural Direct Effect",
+             "Pure Natural Indirect Effect",
+             "Total Effect",
+             "Sum of Pure NDE + NIE"),
+  Value = c(pure_nde, pure_nie, total_eff, pure_nde + pure_nie),
+  `Interpretation` = c(
+    "Income change from education, not through prestige",
+    "Income change through increased prestige from education",
+    "Total income change from 1 more year of education",
+    "Sum of decomposed effects (should equal total)"
+  )
+)
+
+kable(interpretation_table,
+      caption = "Natural Effects Decomposition",
+      digits = 2) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+### Proportion Mediated
+
+```{r}
+prop_mediated <- pure_nie / total_eff
+
+cat("Proportion of total effect mediated by prestige:", 
+    round(prop_mediated * 100, 1), "%\n")
+```
+
+---
+
+## Part 5: Connection to DAGs and Assumptions
+
+### Required Assumptions for Identification
+
+```{r}
+# Create a more complex DAG showing confounders
+dag_confounded <- dagitty('dag {
+  X -> M
+  M -> Y
+  X -> Y
+  C -> X
+  C -> Y
+  C -> M
+}')
+
+tidy_dag <- tidy_dagitty(dag_confounded)
+
+ggdag(tidy_dag) +
+  theme_dag() +
+  ggtitle("Mediation with Confounding") +
+  geom_dag_text(color = "white") +
+  geom_dag_edges() +
+  geom_dag_node(aes(color = name == "C")) +
+  scale_color_manual(values = c("TRUE" = "red", "FALSE" = "steelblue"),
+                     guide = "none")
+```
+
+**Key Assumptions for Natural Direct/Indirect Effects**:
+
+1. **No unmeasured X → Y confounding** (conditional on C)
+2. **No unmeasured M → Y confounding** (conditional on C and X)
+3. **No unmeasured X → M confounding** (conditional on C)
+4. **No M → Y confounders affected by X** (this is the strong one!)
+
+The fourth assumption is often violated in practice - this is why controlled direct effects are sometimes preferred (they only need assumptions 1-3).
+
+---
+
+## Summary and Key Takeaways
+
+### 1. Linear Models (No Interaction)
+- Path coefficients = Causal direct effects
+- CDE = NDE = path coefficient on X→Y
+- Simple decomposition: TE = DE + IE
+- Effects are **transportable** across contexts
+
+### 2. Models with Interaction
+- Path coefficients ≠ Causal effects (effects are conditional)
+- CDE varies with level of mediator M
+- NDE requires counterfactual reasoning
+- Two valid decompositions (pure vs. total)
+- Effects are **context-dependent**
+
+### 3. Practical Implications
+- Always check for interactions before interpreting "direct effects"
+- CDE is useful for policy questions: "What if we set M to m?"
+- NDE is useful for mechanism questions: "What's the effect not through M?"
+- Natural effects require stronger assumptions than controlled effects
+
+### 4. Relationship to DAGs
+- DAGs show causal structure (not necessarily linear relationships)
+- Arrows represent direct causal effects
+- d-separation helps identify confounding
+- Same DAG can represent linear or non-linear models
+
+## References
+
+- Pearl, J. (2009). *Causality: Models, Reasoning, and Inference* (2nd ed.). Cambridge University Press.
+- VanderWeele, T. J. (2015). *Explanation in Causal Inference: Methods for Mediation and Interaction*. Oxford University Press.
+- Robins, J. M., & Greenland, S. (1992). Identifiability and exchangeability for direct and indirect effects. *Epidemiology*, 3, 143-155.
+- VanderWeele, T. J., & Vansteelandt, S. (2009). Conceptual issues concerning mediation, interventions and composition. *Statistics and Its Interface*, 2, 457-468.
+
+---
+
+## Session Info
+
+```{r}
+sessionInfo()
+```

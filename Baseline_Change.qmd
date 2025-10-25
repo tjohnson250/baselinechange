@@ -48,13 +48,13 @@ There are two common approaches to defining the outcome: (1) Compare the differe
 
 There is considerable controversy over whether and when to use change scores vs follow-up measures as the effect estimate. See @tennant2021 and @glymour2022 for a discussion of some of the issues. A number of papers, going back decades, discuss this topic. However, my understanding is that much of the controversy stems from the fact that few researchers use proper causal thinking and methods when designing their studies and estimating effects. The controversy is further amplified because there are many different dimensions to the problem with different researchers focusing on a different subset of those dimensions. Finally, many older papers were written without the benefit of modern causal inference theory and methods, so they lack the theoretical and mathematical foundation to properly address the issues.
 
-If you read @tennant2021, you will see that despite the title warning that "change scores do not estimate causal effects" he later in the paper contradicts the title by correctly stating that change scores do indeed estimate causal effects when the baseline measure is a competing effect of the follow-up measure. This is true of the example that I use throughout this paper. In his paper, he uses other examples in which the "baseline measure" is partly caused by the treatment. In my opinion, such measures are not truly baseline measures. In addition, if you suspect this to be true, then the resulting causal DAG will directly guide how you select the effect to estimate and what is needed to do the estimation.
+If you read @tennant2021, you will see that despite the title warning that "change scores do not estimate causal effects" he later in the paper contradicts the title by correctly stating that change scores do indeed estimate causal effects when the baseline measure is a competing exposure of the follow-up measure, meaning that the baseline measure does not cause the treatment, nor is caused by the treatment. This is true of the example that I use throughout this paper. In his paper, he uses other examples in which the "baseline measure" is partly caused by the treatment or is a cause of treatment. In my opinion, such measures are not truly baseline measures. In addition, if you suspect this to be true, then the resulting causal DAG will directly guide how you select the effect to estimate and what is needed to do the estimation.
 :::
 
 In this notebook I use the notation from the potential outcomes approach to causal inference to refer to the variables of interest. Don't worry, I will repeat these definitions as they are used below.
 
 | Variable | Description |
-|----------------|--------------------------------------------------------|
+|------------------|------------------------------------------------------|
 | $Y_0$ | Baseline measure (continuous) |
 | $Y_1$ | Follow-up measure (continuous) |
 | $X$ | Treatment (binary). $x=1$ when treated, otherwise $x = 0$ |

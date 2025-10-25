@@ -1,0 +1,225 @@
+---
+title: "CATE"
+format: html
+editor: visual
+bibliography: references.bib
+highlight-style: github
+reference-location: margin
+---
+
+## Exploring Conditional Average Treatment Effects
+
+This is an side exploration of CATE based on Tennant's estimand of a follow-up measure adjusted for baseline values @tennant2021:
+
+$$
+E[Y_1^x - Y_1^{x'} | Y_0 = y_0]
+$$
+
+This is typically the effect in the substrata where $Y_0 = y_0$ , but
+
+```{r}
+library(grf)
+library(ggplot2)
+library(dplyr)
+
+set.seed(123)
+
+# Generate data
+n <- 2000
+age <- runif(n, 18, 70)
+male <- rbinom(n, 1, 0.5)
+treatment <- rbinom(n, 1, 0.5)
+
+# True CATE with interaction
+true_cate <- 1 + 0.05 * age + 0.5 * male + 0.02 * age * male
+
+# Outcome
+baseline <- 50 + 0.3 * age + 2 * male
+y <- baseline + treatment * true_cate + rnorm(n, 0, 5)
+
+data <- data.frame(y, treatment, male, age, true_cate)
+
+# ============================================================
+# Method 1: Linear Regression CATE
+# ============================================================
+
+# Fit regression with treatment interactions
+lm_cate <- lm(y ~ treatment * (age + male), data = data)
+summary(lm_cate)
+
+# Extract CATE predictions
+# CATE = coefficient on treatment + interaction coefficients × covariate values
+data$cate_lm <- predict(lm_cate, 
+                        newdata = data %>% mutate(treatment = 1)) -
+                predict(lm_cate, 
+                        newdata = data %>% mutate(treatment = 0))
+
+# ============================================================
+# Method 2: Causal Forest CATE (for comparison)
+# ============================================================
+
+X <- data %>% select(male, age)
+cf <- causal_forest(X, data$y, data$treatment, num.trees = 2000)
+data$cate_cf <- predict(cf)$predictions
+
+# ============================================================
+# Compare the methods
+# ============================================================
+
+cat("=== LINEAR REGRESSION CATE ===\n")
+cat("Model coefficients:\n")
+print(coef(lm_cate))
+cat("\n")
+
+# Show how to interpret coefficients for CATE
+cat("CATE formula from regression:\n")
+cat("CATE(age, male) = ", round(coef(lm_cate)["treatment"], 2), 
+    " + ", round(coef(lm_cate)["treatment:age"], 3), " × age",
+    " + ", round(coef(lm_cate)["treatment:male"], 2), " × male\n\n", sep="")
+
+# Example predictions
+cat("Example CATEs from linear regression:\n")
+cat("Young female (age 20, male=0):", round(coef(lm_cate)["treatment"] + 
+                                              coef(lm_cate)["treatment:age"]*20, 2), "\n")
+cat("Old male (age 65, male=1):", round(coef(lm_cate)["treatment"] + 
+                                          coef(lm_cate)["treatment:age"]*65 + 
+                                          coef(lm_cate)["treatment:male"], 2), "\n\n")
+
+# ============================================================
+# Visualization: Compare methods
+# ============================================================
+
+# Plot 1: True vs predicted CATEs
+p1 <- ggplot(data, aes(x = true_cate)) +
+  geom_point(aes(y = cate_lm, color = "Linear Regression"), alpha = 0.3) +
+  geom_point(aes(y = cate_cf, color = "Causal Forest"), alpha = 0.3) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  scale_color_manual(values = c("Linear Regression" = "blue", 
+                                "Causal Forest" = "red"),
+                    name = "Method") +
+  labs(title = "True CATE vs Predicted CATE",
+       x = "True CATE",
+       y = "Predicted CATE") +
+  theme_minimal()
+
+print(p1)
+
+# Plot 2: CATE by age for males and females
+plot_data <- data.frame(
+  age = rep(seq(18, 70, length.out = 100), 2),
+  male = rep(c(0, 1), each = 100)
+)
+
+# Predict using linear regression
+plot_data$cate_lm <- predict(lm_cate, 
+                              newdata = plot_data %>% mutate(treatment = 1)) -
+                     predict(lm_cate, 
+                              newdata = plot_data %>% mutate(treatment = 0))
+
+# Add true CATE
+plot_data$true_cate <- 1 + 0.05 * plot_data$age + 0.5 * plot_data$male + 
+                       0.02 * plot_data$age * plot_data$male
+
+p2 <- ggplot(plot_data, aes(x = age, color = factor(male))) +
+  geom_line(aes(y = true_cate, linetype = "True CATE"), size = 1.2) +
+  geom_line(aes(y = cate_lm, linetype = "Linear Regression"), size = 1) +
+  scale_color_manual(values = c("0" = "purple", "1" = "blue"),
+                     labels = c("Female", "Male"),
+                     name = "Sex") +
+  scale_linetype_manual(values = c("True CATE" = "solid", 
+                                   "Linear Regression" = "dashed"),
+                        name = "Type") +
+  labs(title = "CATE by Age and Sex: Linear Regression vs True",
+       x = "Age",
+       y = "Treatment Effect") +
+  theme_minimal()
+
+print(p2)
+
+# ============================================================
+# Performance metrics
+# ============================================================
+
+cat("=== PERFORMANCE COMPARISON ===\n")
+cat("Linear Regression:\n")
+cat("  RMSE:", round(sqrt(mean((data$cate_lm - data$true_cate)^2)), 3), "\n")
+cat("  Correlation with true CATE:", round(cor(data$cate_lm, data$true_cate), 3), "\n\n")
+
+cat("Causal Forest:\n")
+cat("  RMSE:", round(sqrt(mean((data$cate_cf - data$true_cate)^2)), 3), "\n")
+cat("  Correlation with true CATE:", round(cor(data$cate_cf, data$true_cate), 3), "\n\n")
+
+# ============================================================
+# Show when linear regression CATE fails
+# ============================================================
+
+cat("=== WHEN LINEAR REGRESSION WORKS WELL ===\n")
+cat("Linear regression CATE works great when:\n")
+cat("1. Treatment effects are truly linear in covariates\n")
+cat("2. You know which interactions to include\n")
+cat("3. The functional form is correctly specified\n\n")
+
+# Generate data with non-linear CATE
+set.seed(456)
+n <- 2000
+age <- runif(n, 18, 70)
+treatment <- rbinom(n, 1, 0.5)
+
+# Non-linear true CATE
+true_cate_nonlin <- 2 + 0.5 * sin(age / 10)  # sinusoidal effect
+
+baseline <- 50 + 0.3 * age
+y_nonlin <- baseline + treatment * true_cate_nonlin + rnorm(n, 0, 5)
+
+data_nonlin <- data.frame(y = y_nonlin, treatment, age, true_cate = true_cate_nonlin)
+
+# Linear regression (misspecified)
+lm_cate_wrong <- lm(y ~ treatment * age, data = data_nonlin)
+data_nonlin$cate_lm <- predict(lm_cate_wrong, 
+                                newdata = data_nonlin %>% mutate(treatment = 1)) -
+                       predict(lm_cate_wrong, 
+                                newdata = data_nonlin %>% mutate(treatment = 0))
+
+# Causal forest (flexible)
+cf_nonlin <- causal_forest(matrix(data_nonlin$age), 
+                           data_nonlin$y, 
+                           data_nonlin$treatment, 
+                           num.trees = 2000)
+data_nonlin$cate_cf <- predict(cf_nonlin)$predictions
+
+# Plot non-linear case
+p3 <- data_nonlin %>%
+  arrange(age) %>%
+  ggplot(aes(x = age)) +
+  geom_line(aes(y = true_cate, color = "True CATE"), size = 1.2) +
+  geom_smooth(aes(y = cate_lm, color = "Linear Regression"), 
+              method = "loess", se = FALSE, size = 1) +
+  geom_smooth(aes(y = cate_cf, color = "Causal Forest"), 
+              method = "loess", se = FALSE, size = 1) +
+  scale_color_manual(values = c("True CATE" = "black",
+                                "Linear Regression" = "blue",
+                                "Causal Forest" = "red"),
+                     name = "Method") +
+  labs(title = "When Linear Regression CATE Fails: Non-linear Treatment Effects",
+       subtitle = "Linear regression imposes wrong functional form",
+       x = "Age",
+       y = "Treatment Effect") +
+  theme_minimal()
+
+print(p3)
+
+cat("=== NON-LINEAR CASE PERFORMANCE ===\n")
+cat("Linear Regression RMSE:", 
+    round(sqrt(mean((data_nonlin$cate_lm - data_nonlin$true_cate)^2)), 3), "\n")
+cat("Causal Forest RMSE:", 
+    round(sqrt(mean((data_nonlin$cate_cf - data_nonlin$true_cate)^2)), 3), "\n")
+```
+
+You can add options to executable code like this
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
