@@ -1,6 +1,6 @@
 ---
 title: "Understanding Causal Effects: Path Coefficients, Direct Effects, and Total Effects"
-author: "Claude Sonnet 4.5 with Extended Thinking as Requested by Todd R. Johnson"
+author: "Directed by Todd R. Johnson, Performed by Claude Sonnet 4.5 with Extended Thinking"
 format: 
   html:
     toc: true
