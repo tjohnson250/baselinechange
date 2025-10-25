@@ -1,6 +1,6 @@
 ---
 title: "Understanding Causal Effects: Path Coefficients, Direct Effects, and Total Effects"
-author: "Causal Inference Tutorial"
+author: "Claude Sonnet 4.5 with Extended Thinking as Requested by Todd R. Johnson"
 format: 
   html:
     toc: true
@@ -23,6 +23,10 @@ This document demonstrates the key distinctions between:
 - **Total effects** and indirect effects
 - How these concepts differ in linear vs. non-linear models
 - The connection to causal DAGs
+
+This version was produced by Claude Sonnet 4.5 with extended thinking. I have scanned the output, which appears to be correct; however, as a tutorial it is missing definitions and explanations. I will be embelleshing it to provide a complete tutorial of these concepts.
+
+Part of the reason for posting this is to demonstrate how to use LLMs to better understand a topic. To assess what Claude produced here and create a useful tutorial, I need to critically review the results and then fill in information that Claude left out. This requires active engagement on my part. Teaching and learning research shows that active engagement with material is one of the most important factors in learning. 
 
 ## Setup
 
