@@ -1,0 +1,459 @@
+---
+title: "Effect Modification vs. Interaction: A Simulation Study"
+author: "Causal Inference Tutorial"
+format:
+  html:
+    code-fold: false
+    toc: true
+    toc-depth: 3
+    theme: cosmo
+    df-print: paged
+execute:
+  warning: false
+  message: false
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+# Introduction
+
+This document explores the distinction between **effect modification**
+and **interaction** as defined by Hernán and Robins in their causal
+inference framework. Through simulations and directed acyclic graphs
+(DAGs), we'll demonstrate why these concepts, while related, represent
+different causal questions.
+
+# Key Definitions
+
+## Effect Modification
+
+**Effect modification** occurs when the effect of an intervention
+(treatment) X on outcome Y varies across levels of another variable Z.
+
+-   Z is called an **effect modifier**
+-   Formally: The causal effect $E[Y^{x=1}] - E[Y^{x=0}]$ differs across
+    strata of Z
+-   Z is typically an *observed* (not manipulated) variable
+-   Example: A drug's effect differs between men and women
+
+**Key point**: Effect modification can be identified when X is
+randomized, but Z is merely observed.
+
+## Interaction (Hernán & Robins Definition)
+
+**Interaction** exists when the effect of jointly intervening on both X
+and Z differs from what would be predicted by their separate effects.
+
+-   Requires that *both* X and Z are manipulable
+-   Formally: Involves potential outcomes under joint interventions
+    $Y^{x,z}$
+-   Tests for synergy or antagonism between two interventions
+-   Example: Combined effect of a drug and exercise program
+
+**Key point**: Interaction requires the ability to intervene on both
+variables.
+
+## The Critical Distinction
+
+-   **If X is randomized and Z is randomized**: Effect modification =
+    Interaction (identifiable)
+-   **If X is randomized but Z is observed**: Effect modification ≠
+    Interaction (interaction requires additional assumptions)
+-   **If Z is non-manipulable** (e.g., sex, race): Only effect
+    modification is conceptually coherent
+
+# Setup
+
+```{r setup}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(ggdag)
+library(dagitty)
+library(patchwork)
+
+set.seed(42)
+
+# Set theme for plots
+theme_set(theme_minimal(base_size = 12))
+```
+
+# Scenario 1: Effect Modification Without True Interaction
+
+## The Causal Structure
+
+In this scenario, we have: - U: An unmeasured confounder - X: A
+randomized treatment - Z: An observed variable (confounded by U) - U
+modifies the effect of X on Y - Z appears to modify X's effect, but this
+is due to confounding
+
+```{r dag1}
+# Create DAG for effect modification scenario
+dag1 <- dagify(
+  Y ~ X + Z + U,  # U modifies X's effect
+  Z ~ U,
+  exposure = "X",
+  outcome = "Y",
+  latent = "U",
+  coords = list(
+    x = c(X = 1, Z = 2, U = 2, Y = 3),
+    y = c(X = 2, Z = 3, U = 1, Y = 2)
+  )
+)
+
+ggdag(dag1, text_size = 4) +
+  theme_dag() +
+  labs(title = "Effect Modification Due to Confounding",
+       subtitle = "U confounds Z→Y and modifies X's effect")
+```
+
+## Simulation
+
+```{r sim1}
+n <- 10000
+
+# Generate data
+simulate_effect_modification <- function(n) {
+  # Unmeasured confounder U (continuous)
+  U <- rnorm(n, mean = 0, sd = 1)
+  
+  # Z is caused by U (and correlated with U)
+  Z <- rbinom(n, 1, plogis(U))
+  
+  # X is randomized (independent of U and Z)
+  X <- rbinom(n, 1, 0.5)
+  
+  # Y is affected by X, Z, U, and U modifies X's effect
+  # The key: U modifies the effect, not Z!
+  Y <- 10 + 
+       2 * X +           # Base effect of X
+       1 * Z +           # Effect of Z
+       1.5 * U +         # Effect of U
+       3 * X * U +       # U modifies X's effect (TRUE interaction with U)
+       rnorm(n, 0, 1)    # Noise
+  
+  data.frame(X = X, Z = Z, U = U, Y = Y)
+}
+
+data1 <- simulate_effect_modification(n)
+
+# Estimate effect modification by Z (what we observe)
+effect_mod_z <- data1 %>%
+  group_by(Z) %>%
+  summarise(
+    effect_of_X = mean(Y[X == 1]) - mean(Y[X == 0]),
+    .groups = 'drop'
+  )
+
+print("Observed Effect Modification by Z:")
+print(effect_mod_z)
+
+# True effect modification by U (what's actually happening)
+data1 <- data1 %>%
+  mutate(U_tertile = cut(U, breaks = quantile(U, probs = seq(0, 1, 1/3)),
+                         include.lowest = TRUE, labels = c("Low", "Mid", "High")))
+
+effect_mod_u <- data1 %>%
+  group_by(U_tertile) %>%
+  summarise(
+    effect_of_X = mean(Y[X == 1]) - mean(Y[X == 0]),
+    .groups = 'drop'
+  )
+
+print("\nTrue Effect Modification by U:")
+print(effect_mod_u)
+```
+
+## Visualization
+
+```{r plot1, fig.width=10, fig.height=4}
+# Plot 1: Observed effect modification by Z
+p1 <- ggplot(data1, aes(x = factor(X), y = Y, fill = factor(Z))) +
+  geom_boxplot(alpha = 0.7) +
+  scale_fill_manual(values = c("#E69F00", "#56B4E9"),
+                    labels = c("Z = 0", "Z = 1")) +
+  labs(title = "Observed: Effect Modification by Z",
+       subtitle = "Treatment effect appears different across Z",
+       x = "Treatment (X)", y = "Outcome (Y)", fill = "Z") +
+  theme(legend.position = "bottom")
+
+# Plot 2: True effect modification by U
+p2 <- ggplot(data1, aes(x = factor(X), y = Y, fill = U_tertile)) +
+  geom_boxplot(alpha = 0.7) +
+  scale_fill_manual(values = c("#999999", "#E69F00", "#56B4E9")) +
+  labs(title = "True: Effect Modification by U",
+       subtitle = "U is the actual effect modifier",
+       x = "Treatment (X)", y = "Outcome (Y)", fill = "U Tertile") +
+  theme(legend.position = "bottom")
+
+p1 + p2
+```
+
+## Key Insight
+
+We observe effect modification by Z, but Z itself doesn't causally
+modify the effect - U does!
+
+To claim **interaction** between X and Z, we'd need to: 1. Intervene on
+both X and Z 2. Control for confounding of Z→Y (adjust for U or its
+proxies)
+
+Since we cannot intervene on Z (or control for U), we cannot identify
+the true X×Z interaction.
+
+# Scenario 2: True Interaction (Both Variables Randomized)
+
+## The Causal Structure
+
+Now both X and Z are randomized interventions, and they truly interact
+in producing Y.
+
+```{r dag2}
+# Create DAG for true interaction
+dag2 <- dagify(
+  Y ~ X + Z,  # True interaction
+  exposure = c("X", "Z"),
+  outcome = "Y",
+  coords = list(
+    x = c(X = 1, Z = 2, Y = 2.5),
+    y = c(X = 1, Z = 1, Y = 2)
+  )
+)
+
+ggdag(dag2, text_size = 4) +
+  theme_dag() +
+  labs(title = "True Interaction Between Two Interventions",
+       subtitle = "Both X and Z are randomized; they interact mechanistically")
+```
+
+## Simulation
+
+```{r sim2}
+simulate_true_interaction <- function(n) {
+  # Both X and Z are randomized
+  X <- rbinom(n, 1, 0.5)
+  Z <- rbinom(n, 1, 0.5)
+  
+  # Y has a true interaction between X and Z
+  Y <- 10 + 
+       2 * X +           # Main effect of X
+       3 * Z +           # Main effect of Z
+       5 * X * Z +       # TRUE interaction (synergy)
+       rnorm(n, 0, 1)    # Noise
+  
+  data.frame(X = X, Z = Z, Y = Y)
+}
+
+data2 <- simulate_true_interaction(n)
+
+# Estimate effects
+effects2 <- data2 %>%
+  group_by(Z) %>%
+  summarise(
+    effect_of_X = mean(Y[X == 1]) - mean(Y[X == 0]),
+    .groups = 'drop'
+  )
+
+print("Effect of X at each level of Z:")
+print(effects2)
+
+# Calculate interaction contrast
+interaction_contrast <- effects2$effect_of_X[2] - effects2$effect_of_X[1]
+print(paste("\nInteraction contrast:", round(interaction_contrast, 2)))
+print("(Difference in effect of X between Z=1 and Z=0)")
+
+# This equals effect modification!
+print("\nSince both are randomized:")
+print("Effect Modification = Interaction")
+```
+
+## Visualization
+
+```{r plot2, fig.width=10, fig.height=5}
+# Create means for line plot
+means2 <- data2 %>%
+  group_by(X, Z) %>%
+  summarise(mean_Y = mean(Y), .groups = 'drop')
+
+# Plot 1: Box plots
+p3 <- ggplot(data2, aes(x = factor(X), y = Y, fill = factor(Z))) +
+  geom_boxplot(alpha = 0.7) +
+  scale_fill_manual(values = c("#E69F00", "#56B4E9"),
+                    labels = c("Z = 0", "Z = 1")) +
+  labs(title = "True Interaction Between X and Z",
+       subtitle = "Both variables randomized",
+       x = "Treatment X", y = "Outcome (Y)", fill = "Intervention Z") +
+  theme(legend.position = "bottom")
+
+# Plot 2: Interaction plot
+p4 <- ggplot(means2, aes(x = factor(X), y = mean_Y, 
+                         color = factor(Z), group = factor(Z))) +
+  geom_point(size = 4) +
+  geom_line(aes(group = factor(Z)), linewidth = 1) +
+  scale_color_manual(values = c("#E69F00", "#56B4E9"),
+                     labels = c("Z = 0", "Z = 1")) +
+  labs(title = "Interaction Plot",
+       subtitle = "Non-parallel lines indicate interaction",
+       x = "Treatment X", y = "Mean Outcome (Y)", color = "Intervention Z") +
+  theme(legend.position = "bottom")
+
+p3 + p4
+```
+
+## Key Insight
+
+When both X and Z are randomized: - Effect modification IS interaction -
+We can make causal claims about synergy - No confounding to worry about
+
+The non-parallel lines show that the effect of X depends on Z (and vice
+versa) - this is **true causal synergy**.
+
+# Scenario 3: Comparing Both Scenarios
+
+## Side-by-Side Comparison
+
+```{r comparison, fig.width=12, fig.height=5}
+# Add scenario labels
+data1_labeled <- data1 %>%
+  mutate(Scenario = "Scenario 1: X randomized, Z observed")
+
+data2_labeled <- data2 %>%
+  mutate(Scenario = "Scenario 2: Both randomized") %>%
+  select(X, Z, Y, Scenario)
+
+# Combine
+combined <- bind_rows(
+  data1_labeled %>% select(X, Z, Y, Scenario),
+  data2_labeled
+)
+
+# Calculate effects for each scenario
+effects_comparison <- combined %>%
+  group_by(Scenario, Z) %>%
+  summarise(
+    effect_of_X = mean(Y[X == 1]) - mean(Y[X == 0]),
+    .groups = 'drop'
+  )
+
+# Plot
+ggplot(effects_comparison, aes(x = factor(Z), y = effect_of_X, 
+                                fill = Scenario)) +
+  geom_col(position = "dodge", alpha = 0.8) +
+  scale_fill_manual(values = c("#E69F00", "#56B4E9")) +
+  labs(title = "Effect of X by Z: Both Scenarios",
+       subtitle = "Effect modification appears in both, but only Scenario 2 has identifiable interaction",
+       x = "Z", y = "Effect of X on Y", fill = "") +
+  theme(legend.position = "bottom")
+```
+
+## Statistical Models
+
+Let's fit models to both scenarios and interpret the interaction terms.
+
+```{r models}
+# Scenario 1: Observed effect modification
+model1 <- lm(Y ~ X * Z, data = data1)
+cat("SCENARIO 1: X randomized, Z observed\n")
+cat("=====================================\n")
+summary(model1)$coefficients
+
+cat("\nInterpretation:\n")
+cat("- X:Z coefficient captures observed effect modification\n")
+cat("- Does NOT represent true causal interaction (confounded by U)\n")
+cat("- To identify interaction, would need to control for U\n\n")
+
+# Scenario 2: True interaction
+model2 <- lm(Y ~ X * Z, data = data2)
+cat("SCENARIO 2: Both randomized\n")
+cat("===========================\n")
+summary(model2)$coefficients
+
+cat("\nInterpretation:\n")
+cat("- X:Z coefficient represents TRUE causal interaction\n")
+cat("- Effect modification = Interaction (both identifiable)\n")
+cat("- No confounding concerns\n")
+```
+
+# Summary Table
+
+```{r summary_table}
+summary_df <- data.frame(
+  Concept = c("Effect Modification", "Interaction (H&R)"),
+  Definition = c(
+    "Effect of X varies across levels of Z",
+    "Effect of joint intervention on X and Z shows synergy/antagonism"
+  ),
+  Requirements = c(
+    "X randomized or conditional exchangeability for X",
+    "Both X and Z randomized or conditional exchangeability for both"
+  ),
+  Z_Status = c(
+    "Can be observed (non-manipulable)",
+    "Must be manipulable"
+  ),
+  Example = c(
+    "Drug effect differs by sex",
+    "Drug + exercise show synergy"
+  ),
+  Identifiable_When = c(
+    "X is randomized",
+    "Both X and Z are randomized (or strong assumptions)"
+  )
+)
+
+knitr::kable(summary_df, caption = "Comparison of Effect Modification and Interaction")
+```
+
+# Key Takeaways
+
+1.  **Effect modification and interaction are not properties of the
+    data-generating process alone** - they depend on what causal
+    question we're asking and what we can identify.
+
+2.  **Effect modification** (observed) can exist without true
+    **interaction** (causal):
+
+    -   When Z is confounded, we may observe effect modification by Z
+    -   But the true mechanism may involve an unmeasured confounder U
+    -   This is why effect modification ≠ interaction when Z isn't
+        randomized
+
+3.  **When both variables are randomized**, effect modification =
+    interaction:
+
+    -   No confounding to worry about
+    -   Statistical interaction term has causal interpretation
+    -   We can make claims about synergy/antagonism
+
+4.  **The statistical tool (interaction term in regression) is the
+    same** in both cases, but the **causal interpretation differs
+    fundamentally**:
+
+    -   With one randomized: Describes how observed effect varies
+        (possibly confounded)
+    -   With both randomized: Describes true causal synergy
+
+5.  **Interaction requires manipulability** of both variables:
+
+    -   Can't have H&R "interaction" with sex, race, genetics
+    -   Can only have effect modification in these cases
+    -   This is a conceptual distinction, not just a statistical one
+
+# References
+
+-   Hernán MA, Robins JM. *Causal Inference: What If.* Boca Raton:
+    Chapman & Hall/CRC, 2020.
+-   VanderWeele TJ, Robins JM. The identification of synergism in the
+    sufficient-component-cause framework. *Epidemiology.*
+    2007;18(3):329-339.
+-   Rothman KJ, Greenland S, Lash TL. *Modern Epidemiology.* 3rd ed.
+    Philadelphia: Lippincott Williams & Wilkins, 2008.
+
+------------------------------------------------------------------------
+
+**Session Info**
+
+```{r session}
+sessionInfo()
+```

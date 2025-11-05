@@ -645,7 +645,7 @@ rct_time1_mean_diff <- filter(means, group=="Treatment")$mean - filter(means, gr
 cat("Mean difference in time1 from RCT (Treatment - Control):", round(rct_time1_mean_diff, 3), "\n")
 ```
 
-Recall that the true causal effect is `{r} additive_effect` and the estimate from this data based on potential outcomes is `{r} po_estimate`. The estimate from the RCT is lower than both. To get a p-value and confidence interval, we can use regression to estimate the difference in means for `time1` between the treatment and control groups:
+Recall that the true causal effect is `r .QuartoInlineRender(additive_effect)` and the estimate from this data based on potential outcomes is `r .QuartoInlineRender(po_estimate)`. The estimate from the RCT is lower than both. To get a p-value and confidence interval, we can use regression to estimate the difference in means for `time1` between the treatment and control groups:
 
 ```{r}
 res_time1_group <- lm(time1 ~ group, data = dataMod2)
@@ -798,7 +798,7 @@ tbl_stack(
 
 Here we see that the analysis of change scores using either the marginal effect of `group` on `change1` or ANCOVA recovers an unbiased estimate similar to the marginal effect of `change1 (RCT)`. When analyzing follow-up scores, the marginal effect of `group` on `time1` (`time1 (RCT)` is biased and has a wide confidence interval, but ANCOVA eliminates the bias and produces a confidence interval equivalent to the change score analyses.
 
-Recall that with the noise in our data and the small sample size, the potential outcomes analysis (`time1 (PO)` and `change1 (PO)`) provide the gold standard estimate of the true effect, which in this model is `{r} additive_effect`.
+Recall that with the noise in our data and the small sample size, the potential outcomes analysis (`time1 (PO)` and `change1 (PO)`) provide the gold standard estimate of the true effect, which in this model is `r .QuartoInlineRender(additive_effect)`.
 
 ::: callout-tip
 ## Causal DAG Theory and Adjustment
@@ -993,7 +993,7 @@ gt_table_overall <- table_overall %>%
 gt_table_overall
 ```
 
-Patients with `L` see an increase by `{r} baseline_outcome_effect` in `time1`, but are much more likely to drop out of the study if they are also in the treatment group. This will tend to decrease the difference in `time1` between the treatment and control groups, hence resulting in underestimating the treatment effect.
+Patients with `L` see an increase by `r .QuartoInlineRender(baseline_outcome_effect)` in `time1`, but are much more likely to drop out of the study if they are also in the treatment group. This will tend to decrease the difference in `time1` between the treatment and control groups, hence resulting in underestimating the treatment effect.
 
 Let's generate the censored dataset:
 
@@ -3735,3 +3735,4 @@ We will use IP Weighting for censoring below, but before that, lets analyze this
 <!-- ``` -->
 
 <!-- Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot. -->
+

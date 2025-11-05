@@ -366,7 +366,7 @@ ggplot(df_people, aes(x = heights, y = weights)) +
 ## Variance vs. Covariance: Key Differences
 
 | Aspect | Variance | Covariance |
-|--------------------|------------------------|-----------------------------|
+|----|----|----|
 | **Variables** | One variable | Two variables |
 | **Measures** | Spread of data | Relationship between variables |
 | **Range** | Always positive (≥ 0) | Can be positive, negative, or zero |
