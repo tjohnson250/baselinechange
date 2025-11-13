@@ -54,7 +54,7 @@ If you read @tennant2021, you will see that despite the title warning that "chan
 In this notebook I use the notation from the potential outcomes approach to causal inference to refer to the variables of interest. Don't worry, I will repeat these definitions as they are used below.
 
 | Variable | Description |
-|----|----|
+|------------------------------------|------------------------------------|
 | $Y_0$ | Baseline measure (continuous) |
 | $Y_1$ | Follow-up measure (continuous) |
 | $X$ | Treatment (binary). $x=1$ when treated, otherwise $x = 0$ |

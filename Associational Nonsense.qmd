@@ -1,0 +1,227 @@
+---
+title: "Casal-Salad"
+author: "Todd R. Johnson"
+format: html
+editor: visual
+---
+
+## 
+
+```{r}
+library(dagitty)
+library(ggdag)
+library(ggplot2)
+library(tidyverse)
+
+# Create the DAG
+dag <- dagitty('dag {
+  Z1 [pos="0,0"]
+  X [pos="1,1"]
+  Y [pos="3,1"]
+  Z2 [pos="2,2"]
+  
+  Z1 -> X
+  Z1 -> Y
+  X -> Z2
+  Y -> Z2
+}')
+
+# Plot the DAG
+ggdag(dag) + 
+  theme_dag() +
+  ggtitle("DAG: No Causal Path X → Y, but Z2 is a Collider")
+
+# Simulate data
+set.seed(42)
+n <- 10000
+
+# Z1 is a confounder
+Z1 <- rnorm(n)
+
+# X and Y are both caused by Z1, but X does NOT cause Y
+X <- 0.8 * Z1 + rnorm(n, sd = 0.5)
+Y <- 1.2 * Z1 + rnorm(n, sd = 0.5)
+
+# Z2 is a COLLIDER - caused by both X and Y
+Z2 <- 0.6 * X + 0.6 * Y + rnorm(n, sd = 0.5)
+
+# Now let's examine the associations
+cat("1. Marginal (unadjusted) association between X and Y:\n")
+print(summary(lm(Y ~ X)))$coefficients[2, c(1,4)]
+
+cat("\n2. Association adjusting for Z1 (the confounder):\n")
+print(summary(lm(Y ~ X + Z1))$coefficients[2, c(1,4)])
+
+cat("\n3. Association adjusting for Z2 (the collider):\n")
+print(summary(lm(Y ~ X + Z2))$coefficients[2, c(1,4)])
+
+cat("\n4. Association adjusting for both Z1 and Z2:\n")
+print(summary(lm(Y ~ X + Z1 + Z2))$coefficients[2, c(1,4)])
+```
+```{r}
+data <- tibble(X, Y, Z1, Z2)
+ggplot(data, aes(x = X, y = Y)) +
+  geom_point()
+```
+```{r}
+# Base R version
+plot(X, Y, 
+     xlab = "X", 
+     ylab = "Y",
+     main = "Marginal (Unadjusted) Relationship Between X and Y",
+     pch = 16, col = rgb(0, 0, 0, 0.3))
+abline(lm(Y ~ X), col = "blue", lwd = 2)
+
+# Add the slope to the plot
+cat("Marginal slope:", coef(lm(Y ~ X))[2], "\n")
+```
+```{r}
+library(ggplot2)
+
+df <- data.frame(X = X, Y = Y)
+
+ggplot(df, aes(x = X, y = Y)) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(method = "lm", se = TRUE, color = "blue") +
+  labs(x = "X",
+       y = "Y",
+       title = "Marginal Relationship Between X and Y",
+       subtitle = "Strong positive association due to confounding by Z1") +
+  theme_minimal()
+```
+
+```{r}
+# Added-variable plot: adjust both X and Y for Z1
+resid_Y <- residuals(lm(Y ~ Z1))
+resid_X <- residuals(lm(X ~ Z1))
+
+# Plot the residuals
+plot(resid_X, resid_Y, 
+     xlab = "X (adjusted for Z1)", 
+     ylab = "Y (adjusted for Z1)",
+     main = "Scatterplot After Adjusting for Z1",
+     pch = 16, col = rgb(0, 0, 0, 0.3))
+abline(lm(resid_Y ~ resid_X), col = "red", lwd = 2)
+
+# The slope of this line equals the coefficient from lm(Y ~ X + Z1)
+cat("Slope from residual plot:", coef(lm(resid_Y ~ resid_X))[2], "\n")
+cat("Coefficient from lm(Y ~ X + Z1):", coef(lm(Y ~ X + Z1))[2], "\n")
+```
+```{r}
+library(broom)
+
+# Get both models
+fit_marginal <- lm(Y ~ X)
+fit_adjusted <- lm(Y ~ X + Z1)
+
+# Extract coefficients for X
+coef_marg <- round(coef(fit_marginal)[2], 3)
+coef_adj <- round(coef(fit_adjusted)[2], 3)
+r2_marg <- round(summary(fit_marginal)$r.squared, 3)
+r2_adj <- round(summary(fit_adjusted)$r.squared, 3)
+
+par(mfrow = c(1, 2))
+
+# Marginal plot
+plot(X, Y, 
+     main = paste0("Marginal\nβ = ", coef_marg, ", R² = ", r2_marg),
+     pch = 16, col = rgb(0, 0, 1, 0.3))
+abline(fit_marginal, col = "blue", lwd = 2)
+
+# Adjusted plot
+resid_X <- residuals(lm(X ~ Z1))
+resid_Y <- residuals(lm(Y ~ Z1))
+plot(resid_X, resid_Y,
+     xlab = "X (adjusted for Z1)", ylab = "Y (adjusted for Z1)",
+     main = paste0("Adjusted for Z1\nβ = ", coef_adj, ", R² = ", r2_adj),
+     pch = 16, col = rgb(1, 0, 0, 0.3))
+abline(lm(resid_Y ~ resid_X), col = "red", lwd = 2)
+```
+
+```{r}
+#| label: fig-four-plots
+#| fig-width: 10
+#| fig-height: 10
+#| fig-cap: "Comparison of marginal and adjusted associations"
+
+# Get all models
+fit_marginal <- lm(Y ~ X)
+fit_adj_Z1 <- lm(Y ~ X + Z1)
+fit_adj_Z2 <- lm(Y ~ X + Z2)
+fit_adj_both <- lm(Y ~ X + Z1 + Z2)
+
+# Extract statistics for each model
+get_stats <- function(model) {
+  coef_x <- round(coef(model)[2], 3)
+  r2 <- round(summary(model)$r.squared, 3)
+  p_val <- summary(model)$coefficients[2, 4]
+  p_text <- ifelse(p_val < 0.001, "p < 0.001", 
+                   paste("p =", round(p_val, 3)))
+  list(coef = coef_x, r2 = r2, p = p_text)
+}
+
+stats_marg <- get_stats(fit_marginal)
+stats_Z1 <- get_stats(fit_adj_Z1)
+stats_Z2 <- get_stats(fit_adj_Z2)
+stats_both <- get_stats(fit_adj_both)
+
+# Create 2x2 plot layout
+par(mfrow = c(2, 2))
+
+# 1. Marginal plot
+plot(X, Y, 
+     main = paste0("Marginal (Unadjusted)\nβ = ", stats_marg$coef, 
+                   ", R² = ", stats_marg$r2, ", ", stats_marg$p),
+     pch = 16, col = rgb(0, 0, 1, 0.3),
+     xlab = "X", ylab = "Y")
+abline(fit_marginal, col = "blue", lwd = 2)
+
+# 2. Adjusted for Z1 only
+resid_X_Z1 <- residuals(lm(X ~ Z1))
+resid_Y_Z1 <- residuals(lm(Y ~ Z1))
+plot(resid_X_Z1, resid_Y_Z1,
+     main = paste0("Adjusted for Z1\nβ = ", stats_Z1$coef, 
+                   ", R² = ", stats_Z1$r2, ", ", stats_Z1$p),
+     xlab = "X (adjusted for Z1)", 
+     ylab = "Y (adjusted for Z1)",
+     pch = 16, col = rgb(1, 0, 0, 0.3))
+abline(lm(resid_Y_Z1 ~ resid_X_Z1), col = "red", lwd = 2)
+
+# 3. Adjusted for Z2 only
+resid_X_Z2 <- residuals(lm(X ~ Z2))
+resid_Y_Z2 <- residuals(lm(Y ~ Z2))
+plot(resid_X_Z2, resid_Y_Z2,
+     main = paste0("Adjusted for Z2\nβ = ", stats_Z2$coef, 
+                   ", R² = ", stats_Z2$r2, ", ", stats_Z2$p),
+     xlab = "X (adjusted for Z2)", 
+     ylab = "Y (adjusted for Z2)",
+     pch = 16, col = rgb(0, 0.5, 0, 0.3))
+abline(lm(resid_Y_Z2 ~ resid_X_Z2), col = "darkgreen", lwd = 2)
+
+# 4. Adjusted for both Z1 and Z2
+resid_X_both <- residuals(lm(X ~ Z1 + Z2))
+resid_Y_both <- residuals(lm(Y ~ Z1 + Z2))
+plot(resid_X_both, resid_Y_both,
+     main = paste0("Adjusted for Z1 and Z2\nβ = ", stats_both$coef, 
+                   ", R² = ", stats_both$r2, ", ", stats_both$p),
+     xlab = "X (adjusted for Z1 and Z2)", 
+     ylab = "Y (adjusted for Z1 and Z2)",
+     pch = 16, col = rgb(0.5, 0, 0.5, 0.3))
+abline(lm(resid_Y_both ~ resid_X_both), col = "purple", lwd = 2)
+
+# Reset plot layout
+par(mfrow = c(1, 1))
+
+# Print summary table
+cat("\nSummary of Results:\n")
+cat("==================\n")
+cat(sprintf("%-20s β = %6.3f, R² = %.3f, %s\n", 
+            "Marginal:", stats_marg$coef, stats_marg$r2, stats_marg$p))
+cat(sprintf("%-20s β = %6.3f, R² = %.3f, %s\n", 
+            "Adjusted for Z1:", stats_Z1$coef, stats_Z1$r2, stats_Z1$p))
+cat(sprintf("%-20s β = %6.3f, R² = %.3f, %s\n", 
+            "Adjusted for Z2:", stats_Z2$coef, stats_Z2$r2, stats_Z2$p))
+cat(sprintf("%-20s β = %6.3f, R² = %.3f, %s\n", 
+            "Adjusted for both:", stats_both$coef, stats_both$r2, stats_both$p))
+```
+
