@@ -54,7 +54,7 @@ If you read @tennant2021, you will see that despite the title warning that "chan
 In this notebook I use the notation from the potential outcomes approach to causal inference to refer to the variables of interest. Don't worry, I will repeat these definitions as they are used below.
 
 | Variable | Description |
-|----|----|
+|------------------------------------|------------------------------------|
 | $Y_0$ | Baseline measure (continuous) |
 | $Y_1$ | Follow-up measure (continuous) |
 | $X$ | Treatment (binary). $x=1$ when treated, otherwise $x = 0$ |
@@ -653,7 +653,7 @@ tbl_time1_group <- tbl_regression(res_time1_group, show_single_row = group)
 tbl_time1_group
 ```
 
-The treatment group showed significantly higher `time1` scores compared to the control group; however, the effect estimate is biased as a result of the slight baseline imbalance. Going back to the data, the mean baseline for the control group is higher than the mean in the treatment group:
+The treatment group showed significantly higher `time1` scores compared to the control group; however, **the effect estimate is affected by baseline imbalance**. Because the control group started with higher baseline values, the simple difference provides a **less precise estimate** of the treatment effect (note the wider CI: 6.6, 12 vs. 8.4, 11 for the baseline-adjusted estimate). Going back to the data, the mean baseline for the control group is higher than the mean in the treatment group:
 
 ```{r}
 baseline_means <- dataMod2 |>

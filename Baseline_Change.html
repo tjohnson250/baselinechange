@@ -246,8 +246,8 @@ Technical Note
 <p>In this notebook I use the notation from the potential outcomes approach to causal inference to refer to the variables of interest. Don’t worry, I will repeat these definitions as they are used below.</p>
 <table class="caption-top table">
 <colgroup>
-<col style="width: 25%">
-<col style="width: 75%">
+<col style="width: 50%">
+<col style="width: 50%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -3497,7 +3497,7 @@ N = 150<span class="gt_footnote_marks" style="white-space:nowrap;font-style:ital
 </div>
 </div>
 </div>
-<p>The treatment group showed significantly higher <code>time1</code> scores compared to the control group; however, the effect estimate is biased as a result of the slight baseline imbalance. Going back to the data, the mean baseline for the control group is higher than the mean in the treatment group:</p>
+<p>The treatment group showed significantly higher <code>time1</code> scores compared to the control group; however, <strong>the effect estimate is affected by baseline imbalance</strong>. Because the control group started with higher baseline values, the simple difference provides a <strong>less precise estimate</strong> of the treatment effect (note the wider CI: 6.6, 12 vs.&nbsp;8.4, 11 for the baseline-adjusted estimate). Going back to the data, the mean baseline for the control group is higher than the mean in the treatment group:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>baseline_means <span class="ot">&lt;-</span> dataMod2 <span class="sc">|&gt;</span></span>
 <span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(group) <span class="sc">|&gt;</span></span>
